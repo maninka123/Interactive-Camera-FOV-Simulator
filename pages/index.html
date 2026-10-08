@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Explore camera sensors, lenses, aperture and field of view in an interactive optical laboratory."
+    />
+    <title>Interactive Camera FOV Simulator</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f6f8fb;
+        color: #253c56;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+      }
+      main {
+        max-width: 1100px;
+        margin: auto;
+        padding: 58px 26px;
+      }
+      small {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: #4280c3;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: clamp(32px, 5vw, 56px);
+        letter-spacing: -2px;
+        margin: 19px 0;
+        line-height: 1.13;
+        max-width: 720px;
+      }
+      p {
+        color: #7389a2;
+        line-height: 1.8;
+        font-size: 15px;
+        max-width: 640px;
+      }
+      nav {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin: 27px 0 35px;
+        flex-wrap: wrap;
+      }
+      a {
+        color: #286bc0;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 3px solid #1469e8;
+        outline-offset: 4px;
+      }
+      .launch {
+        padding: 14px 23px;
+        background: #1469e8;
+        color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 5px 18px #1469e81a;
+        font-weight: 600;
+      }
+      .image {
+        height: 440px;
+        overflow: hidden;
+        border: 1px solid #dbe5f1;
+        border-radius: 16px;
+        box-shadow: 0 16px 50px #264f7c0d;
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .features {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin: 22px 0;
+      }
+      .features span {
+        padding: 8px 12px;
+        border: 1px solid #dce6f1;
+        background: #fff;
+        border-radius: 7px;
+        color: #6d84a0;
+        font-size: 11px;
+      }
+      footer {
+        border-top: 1px solid #dce5f0;
+        margin-top: 38px;
+        padding-top: 20px;
+        font-size: 11px;
+        color: #8497ae;
+        line-height: 1.8;
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 35px 18px;
+        }
+        h1 {
+          letter-spacing: -1px;
+        }
+        .image {
+          height: 260px;
+        }
+        .image img {
+          width: 180%;
+          max-width: none;
+          margin-left: -25%;
+        }
+        p {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <small>CAMERA & LENS OPTICAL EXPLORER</small>
+      <h1>See how your camera<br />sees the world.</h1>
+      <p>
+        An interactive optics laboratory for sensor size, focal length, aperture
+        and image circle. Explore connected diagrams, compare configurations and
+        export your results. Everything runs locally in your browser.
+      </p>
+      <nav>
+        <a class="launch" href="camera-lens-explorer/"
+          >Open the optical explorer →</a
+        ><a
+          href="https://github.com/maninka123/Interactive-Camera-FOV-Simulator#readme"
+          >Read the guide ↗</a
+        >
+      </nav>
+      <div class="image">
+        <a href="camera-lens-explorer/" aria-label="Open the optical explorer"
+          ><img
+            src="assets/explorer-overview.png"
+            alt="Camera and lens settings, sensor image-circle diagram and live field-of-view results"
+        /></a>
+      </div>
+      <div class="features">
+        <span>Sensor & image circle</span><span>Animated aperture</span
+        ><span>Optical rays</span><span>3D field of view</span
+        ><span>Image framing</span><span>Pixels on target</span
+        ><span>Depth of field</span>
+      </div>
+      <footer>
+        A companion to the
+        <a href="https://github.com/maninka123/Lidar_camera_FOV_analysis"
+          >original LiDAR/camera analysis project</a
+        >.
+        <a href="https://github.com/maninka123/Interactive-Camera-FOV-Simulator"
+          >View source ↗</a
+        ><br />Rectilinear and thin-lens educational models · no account or
+        backend required.
+      </footer>
+    </main>
+  </body>
+</html>
