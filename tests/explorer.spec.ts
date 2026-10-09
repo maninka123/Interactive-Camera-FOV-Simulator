@@ -261,7 +261,12 @@ test("desktop workbench fits laptop screens, explains target settings and enters
     ).toBeVisible();
     await page.getByText("What these settings mean", { exact: true }).click();
     await page.getByRole("button", { name: "Compare", exact: true }).click();
-    expect(await page.locator(".results").evaluate((e) => e.scrollHeight <= e.clientHeight + 1), `comparison results at ${width} x ${height}`).toBe(true);
+    const resultsFit = await page.locator(".results").evaluate((e) => ({
+      height: e.clientHeight,
+      content: e.scrollHeight,
+      cards: [...e.children].map((c) => c.getBoundingClientRect().height),
+    }));
+    expect(resultsFit.content <= resultsFit.height + 1, `comparison results at ${width} x ${height}: ${JSON.stringify(resultsFit)}`).toBe(true);
   }
   await page.getByRole("button", { name: "Full screen", exact: true }).click();
   await expect

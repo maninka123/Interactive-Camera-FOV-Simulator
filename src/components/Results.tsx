@@ -137,8 +137,8 @@ export function ResultsPanel({
             <dd>{display(r.cropFactor)}×</dd>
           </div>
           <div>
-            <dt title="Diagonal field-of-view equivalent on a 36 x 24 mm sensor">
-              35 mm equivalent
+            <dt aria-label="35 mm equivalent" title="Diagonal field-of-view equivalent on a 36 x 24 mm sensor">
+              35 mm equiv.
             </dt>
             <dd>{display(r.focalEquivalent35)} mm</dd>
           </div>
