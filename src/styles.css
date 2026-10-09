@@ -1393,34 +1393,88 @@ input[type="checkbox"] {
   .aperture-view {
     height: 100%;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .aperture-demonstration {
+    flex: 1;
+    min-height: 0;
+    container-type: size;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    margin-bottom: 0;
+    gap: 24px;
+  }
+  .iris-feature {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(120px, 16cqw, 180px);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 8px 16px;
+    width: 100%;
+    text-align: left;
+  }
+  .iris-opening {
+    display: contents;
+  }
+  .iris-opening > svg {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: min(100%, 360px, calc(100cqh - 16px));
+    height: auto;
+    justify-self: center;
+  }
+  .iris-opening > div {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+  }
+  .iris-metrics {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
   }
   .aperture-image {
-    max-height: 160px;
-    max-width: 288px;
+    width: min(100%, max(180px, calc(180cqh - 270px)));
+    max-width: none;
+    max-height: none;
     margin-inline: auto;
+  }
+  .stop-chart {
+    flex-shrink: 0;
+  }
+  .stop-chart svg {
+    max-width: 56px;
   }
   .aperture-view > .diagram-note,
   .aperture-scale {
     display: none;
   }
   .split .aperture-view {
-    height: auto;
+    height: 100%;
     flex: 1;
     padding: 8px;
+    gap: 6px;
   }
   .split .aperture-demonstration {
     grid-template-columns: minmax(90px, 0.7fr) minmax(130px, 1.4fr);
     gap: 8px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
+  }
+  .split .iris-feature {
+    display: flex;
+    gap: 5px;
+    text-align: center;
   }
   .split .iris-opening {
+    display: flex;
     flex-direction: column;
     text-align: center;
     gap: 2px;
   }
   .split .iris-opening > svg {
-    width: 60px;
-    height: 60px;
+    width: min(100%, clamp(60px, calc(100cqh - 90px), 160px));
+    height: auto;
   }
   .split .iris-opening strong {
     font-size: 24px;
@@ -1433,8 +1487,7 @@ input[type="checkbox"] {
     display: none;
   }
   .split .aperture-image {
-    max-height: 100px;
-    max-width: 180px;
+    width: min(100%, max(180px, calc(180cqh - 126px)));
   }
   .split .aperture-preview-heading,
   .split .iris-opening .eyebrow {
@@ -1594,23 +1647,26 @@ input[type="checkbox"] {
     margin-top: 3px;
   }
   .aperture-image {
-    max-height: 125px;
-    max-width: 225px;
+    width: min(100%, max(180px, calc(180cqh - 171px)));
+  }
+  .aperture-view {
+    padding: 10px;
+    gap: 8px;
+  }
+  .aperture-view .stop-chart svg {
+    max-width: 40px;
+  }
+  .aperture-image-stats {
+    margin: 4px 0;
+  }
+  .aperture-preview-heading {
+    margin-bottom: 4px;
   }
   .aperture-preview-note {
     display: none;
   }
   .aperture-demonstration {
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-  .iris-opening > svg {
-    width: 85px;
-    height: 85px;
-  }
-  .split .aperture-image {
-    max-height: 100px;
-    max-width: 180px;
+    gap: 18px;
   }
   .view-tools .button {
     min-height: 30px;

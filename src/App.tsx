@@ -453,7 +453,7 @@ export default function App() {
             <Card className="visualisation" id="laboratory">
               <div className="visual-header">
                 <div>
-                  <span className="eyebrow">THE OPTICAL WORKBENCH</span>
+                  <span className="eyebrow">Optical workbench</span>
                   <h2>
                     {compare
                       ? "Compare configurations."

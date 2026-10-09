@@ -493,6 +493,7 @@ test("aperture preview shows exposure changes, can compensate brightness and fit
   for (const [width, height] of [
     [1366, 768],
     [1440, 900],
+    [1920, 1080],
   ]) {
     await page.setViewportSize({ width, height });
     await page.goto("./");
@@ -541,6 +542,15 @@ test("aperture preview shows exposure changes, can compensate brightness and fit
       .locator(".aperture-image-panel")
       .boundingBox())!;
     expect(iris.x + iris.width).toBeLessThan(preview.x);
+    const imageBox = (await page.locator(".aperture-image").boundingBox())!;
+    const openingBox = (await page.locator(".iris-opening > svg").boundingBox())!;
+    const stopsBox = (await page.locator(".stop-chart").boundingBox())!;
+    expect(preview.y + preview.height).toBeLessThanOrEqual(stopsBox.y);
+    expect(iris.y + iris.height).toBeLessThanOrEqual(stopsBox.y);
+    if (width === 1920) {
+      expect(imageBox.width).toBeGreaterThan(500);
+      expect(openingBox.width).toBeGreaterThan(250);
+    }
     await page.getByRole("button", { name: "Compare", exact: true }).click();
     // Compare changes the available width; wait for ResizeObserver and layout.
     await page.evaluate(() => new Promise<void>((resolve) =>

@@ -25,7 +25,7 @@ export const MODES: {
   {
     id: "coverage",
     label: "Sensor coverage",
-    title: "A sensor. An image circle. The full picture.",
+    title: "Sensor coverage",
     description:
       "The rectangle is your active sensor; the circle is the lens’s specified image circle. Red regions fall outside it. Overlay other formats to compare their physical dimensions.",
     equation:
@@ -34,7 +34,7 @@ export const MODES: {
   {
     id: "aperture",
     label: "Aperture",
-    title: "See what a stop of light looks like.",
+    title: "Aperture",
     description:
       "The iris is a stylised blade mechanism. Opening sizes represent the entrance pupil at a fixed focal length. Smaller f-numbers admit more light under equal exposure and transmission. The illustrative image holds shutter speed and ISO fixed relative to f/2.8; Keep image brightness compensates exposure. The subject is at the focus distance and the background at twice that distance. Background blur uses a thin-lens approximation. F-number is not T-stop.",
     equation:
@@ -43,7 +43,7 @@ export const MODES: {
   {
     id: "rays",
     label: "Optical rays",
-    title: "Follow the field of view.",
+    title: "Optical rays",
     description:
       "A labelled pinhole cross-section shows the inverted image and boundary rays. Drawing angles and distances are compressed to keep extreme lenses legible; the reported field of view uses your actual inputs. This is a schematic of infinity-focus framing, not a multi-element lens ray trace.",
     equation:
@@ -52,7 +52,7 @@ export const MODES: {
   {
     id: "frustum",
     label: "3D field of view",
-    title: "Explore the space your camera sees.",
+    title: "3D field of view",
     description:
       "Orbit, pan and zoom around the frustum. Its target plane uses exactly the same width and height as the other diagrams. The camera’s viewing geometry stays fixed while you move the observer.",
     equation:
@@ -61,7 +61,7 @@ export const MODES: {
   {
     id: "preview",
     label: "Image preview",
-    title: "Same scene. Different perspective on it.",
+    title: "Image preview",
     description:
       "A fixed synthetic scene is projected from one camera position, 1.6 m above the ground. Every object has world coordinates and depth. Focal length changes framing through a pinhole projection; the scene is not stretched. Dark corners show the geometric image-circle boundary when coverage is incomplete. Exposure and defocus are not simulated.",
     equation:
@@ -70,7 +70,7 @@ export const MODES: {
   {
     id: "distance",
     label: "Scene & pixels",
-    title: "From field of view to pixels on target.",
+    title: "Scene & pixels",
     description:
       "The scene width and height are measured on a plane perpendicular to the optical axis at the target distance. An object’s projected size assumes it lies on that plane; it can extend beyond the image.",
     equation:
@@ -79,7 +79,7 @@ export const MODES: {
   {
     id: "dof",
     label: "Depth of field",
-    title: "Where acceptable sharpness begins and ends.",
+    title: "Depth of field",
     description:
       "The blue band marks approximate acceptable sharpness, using your circle of confusion. Aperture, focal length, focus distance and blur criterion all matter. Blur changes gradually outside this band; the edges are a chosen threshold.",
     equation:
@@ -312,8 +312,8 @@ export function CoverageDiagram({
           color="var(--primary)"
         >
           {lensAttached
-            ? `LENS IMAGE CIRCLE · Ø ${display(c.circle)} mm`
-            : "CAMERA SENSOR · camera only"}
+            ? `Lens image circle · Ø ${display(c.circle)} mm`
+            : "Camera sensor · camera only"}
         </Text>
         {lensAttached && (
           <circle
@@ -581,7 +581,7 @@ export function ApertureDiagram({
           <div className="iris-opening">
             <Iris aperture={c.aperture} blades={blades} size={210} />
             <div>
-              <span className="eyebrow">ENTRANCE PUPIL</span>
+              <span className="eyebrow">Entrance pupil</span>
               <strong>f/{display(c.aperture)}</strong>
             </div>
           </div>
@@ -598,7 +598,7 @@ export function ApertureDiagram({
         </div>
         <div className="aperture-image-panel">
           <div className="aperture-preview-heading">
-            <strong>Effect on the image</strong>
+            <strong>Image effects</strong>
             <span>Illustrative preview</span>
           </div>
           <svg
@@ -1165,7 +1165,7 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
           minimumSize={14}
           color="var(--primary)"
         >
-          TARGET PLANE · {display(c.distanceM)} m from camera
+          Target plane · {display(c.distanceM)} m from camera
         </Text>
         <rect
           data-testid="scene-plane"
@@ -1256,7 +1256,7 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
             size={14}
             minimumSize={14}
           >
-            OBJECT WIDTH
+            Object width
           </Text>
           <Text
             x={compact ? 115 : 537}

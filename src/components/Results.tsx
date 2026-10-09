@@ -34,7 +34,7 @@ export function ResultsPanel({
             <Camera size={17} />
             <h2>Camera only</h2>
           </div>
-          <p className="eyebrow">SENSOR · {name}</p>
+          <p className="eyebrow">Sensor · {name}</p>
           <div className="scene-dimensions">
             <strong>
               {display(c.width)} × {display(c.height)}
@@ -99,7 +99,7 @@ export function ResultsPanel({
           <h2>Live results</h2>
           <span className="live-dot" />
         </div>
-        <p className="eyebrow">NOMINAL FIELD OF VIEW · {name}</p>
+        <p className="eyebrow">Field of view · {name}</p>
         <div className="primary-result">
           <strong data-testid={`horizontal-${name}`}>
             {display(r.horizontal, 1)}
