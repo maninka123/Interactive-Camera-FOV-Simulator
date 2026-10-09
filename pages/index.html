@@ -91,6 +91,57 @@
         color: #6d84a0;
         font-size: 11px;
       }
+      section {
+        margin-top: 48px;
+        scroll-margin-top: 24px;
+      }
+      h2 {
+        font-size: 28px;
+        letter-spacing: -0.6px;
+      }
+      h3 {
+        margin: 0 0 10px;
+        font-size: 17px;
+      }
+      .views, .gallery {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+      .views article {
+        border: 1px solid #dce6f1;
+        background: #fff;
+        border-radius: 12px;
+        padding: 22px;
+      }
+      .views p {
+        margin: 0;
+      }
+      figure {
+        margin: 0;
+        min-width: 0;
+      }
+      figure img {
+        border: 1px solid #dbe5f1;
+        border-radius: 12px;
+      }
+      figcaption {
+        padding: 10px 0;
+        color: #526b85;
+        font-size: 13px;
+      }
+      ol {
+        padding-left: 24px;
+        max-width: 760px;
+        color: #526b85;
+        line-height: 1.8;
+      }
+      li + li {
+        margin-top: 12px;
+      }
+      #assumptions p {
+        max-width: 850px;
+      }
       footer {
         border-top: 1px solid #dce5f0;
         margin-top: 38px;
@@ -117,6 +168,9 @@
         p {
           font-size: 13px;
         }
+        .views, .gallery {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -132,10 +186,7 @@
       <nav>
         <a class="launch" href="camera-lens-explorer/"
           >Open the optical explorer →</a
-        ><a
-          href="https://github.com/maninka123/Interactive-Camera-FOV-Simulator#readme"
-          >Read the guide ↗</a
-        >
+        ><a href="#guide">Read the guide ↓</a>
       </nav>
       <div class="image">
         <a href="camera-lens-explorer/" aria-label="Open the optical explorer"
@@ -150,6 +201,64 @@
         ><span>Image framing</span><span>Pixels on target</span
         ><span>Depth of field</span>
       </div>
+      <section id="explore" aria-labelledby="explore-heading">
+        <h2 id="explore-heading">Explore camera and lens optics</h2>
+        <div class="views">
+          <article>
+            <h3>Sensor coverage</h3>
+            <p>Inspect the image circle, exact illuminated area, uncovered regions and sensor-format overlays.</p>
+          </article>
+          <article>
+            <h3>Aperture</h3>
+            <p>Explore an animated six- or eight-blade iris, compare f-stops and see idealised relative light.</p>
+          </article>
+          <article>
+            <h3>Optical rays &amp; 3D</h3>
+            <p>Trace pinhole boundary rays and orbit a field-of-view frustum with target dimensions. A 2D alternative is also available.</p>
+          </article>
+          <article>
+            <h3>Image preview</h3>
+            <p>See a fixed synthetic scene with world-space projection and a reference frame.</p>
+          </article>
+          <article>
+            <h3>Scene &amp; pixels</h3>
+            <p>Measure coverage at a distance, pixel sampling and object projection.</p>
+          </article>
+          <article>
+            <h3>Depth of field</h3>
+            <p>Inspect near and far boundaries and hyperfocal distance with an explicit blur criterion.</p>
+          </article>
+        </div>
+      </section>
+      <section aria-labelledby="gallery-heading">
+        <h2 id="gallery-heading">Inside the explorer</h2>
+        <div class="gallery">
+          <figure>
+            <img src="assets/aperture-view.png" loading="lazy" alt="Animated iris and aperture f-stop comparison" />
+            <figcaption>Interactive aperture and f-stop comparison.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/frustum-view.png" loading="lazy" alt="Orbitable 3D camera field-of-view frustum" />
+            <figcaption>Interactive 3D field of view.</figcaption>
+          </figure>
+        </div>
+      </section>
+      <section id="guide" aria-labelledby="guide-heading">
+        <h2 id="guide-heading">How to use the explorer</h2>
+        <ol>
+          <li><a href="camera-lens-explorer/">Open the explorer</a>, pick a camera and lens, and edit their specifications. Preset dimensions are representative and editable; custom numeric fields are always available.</li>
+          <li>Select <strong>Combine camera + lens</strong> to pair the displayed specifications. Subsequent changes stay live. Choose a diagram tab to explore the geometry. On mobile, controls can collapse.</li>
+          <li>Select <strong>Compare</strong> to edit A and B independently and inspect any view side by side. <strong>Copy A → B</strong> starts a controlled comparison.</li>
+          <li>Export results as <strong>JSON</strong> or <strong>CSV</strong>, or export supported 2D diagrams as <strong>SVG</strong>. Select <strong>Share</strong> to copy a URL containing both configurations.</li>
+        </ol>
+        <p>Everything runs in your browser. No account or server is needed.</p>
+      </section>
+      <section id="assumptions" aria-labelledby="assumptions-heading">
+        <h2 id="assumptions-heading">Optical assumptions</h2>
+        <p>Field of view and target coverage use a rectilinear, infinity-focus pinhole model. Aperture does not change this nominal field of view. Depth of field uses a thin-lens model and the chosen circle of confusion. At close focus, finite conjugates and real focus breathing can change framing.</p>
+        <p>Coverage assumes a centred circular image circle and describes geometry, not measured vignetting or image quality. Pixel pitch is derived only when resolution represents the physical pixel array. Preview exposure and defocus are not simulated; iris blades are illustrative.</p>
+        <p><a href="https://github.com/maninka123/Interactive-Camera-FOV-Simulator/blob/main/docs/optical-models.md">Read the equations, preset sources and limitations ↗</a></p>
+      </section>
       <footer>
         A companion to the
         <a href="https://github.com/maninka123/Lidar_camera_FOV_analysis"

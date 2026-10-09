@@ -14,7 +14,8 @@ cpSync(
 );
 mkdirSync(new URL("assets/", output), { recursive: true });
 cpSync(
-  new URL("../docs/images/explorer-overview.png", import.meta.url),
-  new URL("assets/explorer-overview.png", output),
+  new URL("../docs/images/", import.meta.url),
+  new URL("assets/", output),
+  { recursive: true },
 );
 console.log(`Pages artifact prepared in ${root}.pages`);
