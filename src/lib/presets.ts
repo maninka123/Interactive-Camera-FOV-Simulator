@@ -20,9 +20,26 @@ export const SENSORS = [
 ];
 export const FOCALS = [2.1, 2.8, 3.5, 4, 6, 8, 12, 16, 25, 35, 50, 85, 100];
 export const APERTURES = [1, 1.2, 1.4, 1.8, 2, 2.8, 4, 5.6, 8, 11, 16, 22];
+export const OVERLAY_COLORS = [
+  "#9964b9",
+  "#c48b20",
+  "#15959b",
+  "#5a80ac",
+  "#c65791",
+  "#559243",
+  "#bf6844",
+  "#7560c1",
+  "#327e95",
+  "#8b6b3f",
+];
 export const CIRCLES = [
-  { name: '1/2.3" equivalent', value: 7.7 },
+  { name: '1/4" equivalent', value: 4 },
+  { name: '1/3" equivalent', value: 6 },
+  { name: '1/2.8" equivalent', value: 6.4 },
+
+  { name: '1/2.3" equivalent', value: 7.8 },
   { name: '1/1.8" equivalent', value: 9 },
+  { name: '2/3" equivalent', value: 11 },
   { name: '1" equivalent', value: 16 },
   { name: "Micro Four Thirds equivalent", value: 22 },
   { name: "APS-C equivalent", value: 29 },

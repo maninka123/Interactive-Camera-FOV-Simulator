@@ -4,7 +4,6 @@ import {
   Camera,
   CheckCircle2,
   AlertTriangle,
-  Unlink2,
   ChevronDown,
   CircleHelp,
   Crosshair,
@@ -119,23 +118,27 @@ function Preset({
   value,
   options,
   change,
+  selectionRevision,
 }: {
   label: string;
   value: string;
   options: { label: string; value: string }[];
   change: (v: string) => void;
+  selectionRevision: Configuration;
 }) {
   const id = useId();
-  const [custom, setCustom] = useState(false);
+  const [manual, setManual] = useState(false);
+  // Custom is a temporary editing intent, cleared by any committed setting change.
+  useEffect(() => setManual(false), [selectionRevision]);
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <div className="select-wrap">
         <select
           id={id}
-          value={custom ? "Custom" : value}
+          value={manual ? "Custom" : value}
           onChange={(e) => {
-            setCustom(e.target.value === "Custom");
+            setManual(e.target.value === "Custom");
             change(e.target.value);
           }}
         >
@@ -155,8 +158,6 @@ export function Controls({
   config: c,
   change,
   reset,
-  combine,
-  combined,
   cameraOnly,
   changeCameraOnly,
   name,
@@ -164,8 +165,6 @@ export function Controls({
   config: Configuration;
   change: (c: Configuration) => void;
   reset: () => void;
-  combine: () => void;
-  combined: boolean;
   cameraOnly: boolean;
   changeCameraOnly: (only: boolean) => void;
   name: string;
@@ -286,6 +285,7 @@ export function Controls({
             <span className="tag">{name}</span>
           </div>
           <Preset
+            selectionRevision={c}
             label="Sensor format"
             value={c.sensor}
             options={SENSORS.map((s) => ({ label: s.name, value: s.name }))}
@@ -470,6 +470,7 @@ export function Controls({
           </div>
           <div className="field-pair">
             <Preset
+              selectionRevision={c}
               label="Focal length preset"
               value={FOCALS.includes(c.focal) ? String(c.focal) : "Custom"}
               options={FOCALS.map((f) => ({
@@ -500,6 +501,7 @@ export function Controls({
           />
           <div className="field-pair">
             <Preset
+              selectionRevision={c}
               label="Aperture preset"
               value={
                 APERTURES.includes(c.aperture) ? String(c.aperture) : "Custom"
@@ -526,6 +528,7 @@ export function Controls({
           />
           <div className="image-circle-fields">
             <Preset
+              selectionRevision={c}
               label="Image circle preset"
               value={
                 CIRCLES.some((s) => s.value === c.circle)
@@ -564,33 +567,20 @@ export function Controls({
         </Card>
       </details>
       <Button
-        className={`combine ${combined ? "is-combined" : ""}`}
-        onClick={combine}
-        aria-pressed={combined}
-        title={
-          combined
-            ? "Click again to decouple the camera and lens"
-            : "Combine the camera and lens"
-        }
+        className={`combine ${!cameraOnly ? "is-combined" : ""}`}
+        role="switch"
+        aria-label="Camera + lens"
+        aria-checked={!cameraOnly}
+        onClick={() => changeCameraOnly(!cameraOnly)}
+        title={cameraOnly ? "Switch to camera + lens" : "Switch to camera only"}
       >
-        {combined ? <Unlink2 size={16} /> : <Link2 size={16} />}
-        {combined ? "Camera + lens combined" : "Combine camera + lens"}
+        {cameraOnly ? <Camera size={16} /> : <Link2 size={16} />}
+        {cameraOnly ? "Camera only" : "Camera + lens"}
       </Button>
-      {combined && (
-        <label className="camera-view-toggle">
-          <input
-            type="checkbox"
-            role="switch"
-            checked={cameraOnly}
-            onChange={(e) => changeCameraOnly(e.target.checked)}
-          />
-          <span>Show camera only</span>
-        </label>
-      )}
       <p className="combine-note">
-        {combined
-          ? "Combined configuration · all changes update live."
-          : "Pair these specifications to explore. Results already update live."}
+        {cameraOnly
+          ? "Sensor only. Switch on the lens to explore optics."
+          : "Lens enabled. Click to inspect the camera only."}
       </p>
       <details
         className={`settings-fold settings-scene ${pane === "scene" ? "active-settings" : ""}`}
@@ -638,13 +628,14 @@ export function Controls({
             <summary>What these settings mean</summary>
             <p>
               <strong>Target distance</strong> places a measurement plane in
-              front of the camera. At 10 m, the results show how much width and
-              height the camera covers there. The slider changes this distance.
+              front of the camera. At {display(c.distanceM)} m, the results show
+              how much width and height the camera covers there. The slider
+              changes this distance.
             </p>
             <p>
               <strong>Object width</strong> is the real width of an object on
-              that plane. At 1 m, the app estimates how many pixels wide it
-              appears.
+              that plane. At {display(c.objectM)} m, the app estimates how many
+              pixels wide it appears.
             </p>
             <p>
               These settings update scene coverage and pixel estimates. They do

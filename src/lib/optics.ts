@@ -117,6 +117,8 @@ export function calculate(c: Configuration) {
     coveredArea(c.width, c.height, c.circle) / (c.width * c.height);
   return {
     sensorDiagonal,
+    cropFactor: Math.hypot(36, 24) / sensorDiagonal,
+    focalEquivalent35: (c.focal * Math.hypot(36, 24)) / sensorDiagonal,
     aspect: c.width / c.height,
     horizontal,
     vertical,
@@ -134,6 +136,7 @@ export function calculate(c: Configuration) {
     apertureDiameter: c.focal / c.aperture,
     apertureArea: Math.PI * (c.focal / c.aperture / 2) ** 2,
     relativeLight: 1 / c.aperture ** 2,
+    relativeLightVs28: (2.8 / c.aperture) ** 2,
     pitchX: c.physicalPixels ? (c.width * 1000) / c.pixelsX : null,
     pitchY: c.physicalPixels ? (c.height * 1000) / c.pixelsY : null,
     meanAngularX: horizontal / c.pixelsX,
@@ -154,3 +157,13 @@ export function display(value: number, digits = 2) {
     ? value.toLocaleString("en", { maximumFractionDigits: digits })
     : "∞";
 }
+
+export function coveragePercent(coverage: number) {
+  return coverage < 1 && Math.round(coverage * 1000) === 1000
+    ? "<100"
+    : display(coverage * 100, 1);
+}
+export const defaultConfiguration = (name: "A" | "B"): Configuration => ({
+  ...DEFAULT,
+  focal: name === "B" ? 50 : DEFAULT.focal,
+});

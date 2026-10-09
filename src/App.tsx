@@ -8,6 +8,8 @@ import {
   Copy,
   ExternalLink,
   Focus,
+  Layers,
+  Moon,
   GitCompareArrows,
   Link2,
   Maximize,
@@ -29,7 +31,14 @@ import {
 } from "./components/Diagrams";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
-import { DEFAULT, calculate, display, type Configuration } from "./lib/optics";
+import {
+  DEFAULT,
+  calculate,
+  display,
+  defaultConfiguration,
+  coveragePercent,
+  type Configuration,
+} from "./lib/optics";
 import {
   download,
   downloadDiagram,
@@ -39,6 +48,7 @@ import {
   toCsv,
   toJson,
 } from "./lib/sharing";
+import { SENSORS } from "./lib/presets";
 const Frustum = lazy(() => import("./components/Frustum"));
 const icons = {
   coverage: Scan,
@@ -47,7 +57,7 @@ const icons = {
   frustum: Box,
   preview: Maximize,
   distance: SlidersHorizontal,
-  dof: Focus,
+  dof: Layers,
 };
 
 function ComparisonTable({ a, b }: { a: Configuration; b: Configuration }) {
@@ -70,14 +80,14 @@ function ComparisonTable({ a, b }: { a: Configuration; b: Configuration }) {
       `${display(rb.sceneWidthM)} × ${display(rb.sceneHeightM)} m`,
     ],
     [
-      "Aperture / light vs f/1",
-      `f/${a.aperture} · ${display(ra.relativeLight * 100)}%`,
-      `f/${b.aperture} · ${display(rb.relativeLight * 100)}%`,
+      "Aperture / light vs f/2.8",
+      `f/${display(a.aperture)} · ${display(ra.relativeLightVs28 * 100)}%`,
+      `f/${display(b.aperture)} · ${display(rb.relativeLightVs28 * 100)}%`,
     ],
     [
       "Sensor coverage",
-      `${display(ra.coverage * 100, 1)}% · ${ra.coverageStatus}`,
-      `${display(rb.coverage * 100, 1)}% · ${rb.coverageStatus}`,
+      `${coveragePercent(ra.coverage)}% · ${ra.coverageStatus}`,
+      `${coveragePercent(rb.coverage)}% · ${rb.coverageStatus}`,
     ],
     [
       "Object projection",
@@ -120,10 +130,11 @@ export default function App() {
     [b, setB] = useState(initial.b),
     [compare, setCompare] = useState(initial.compare);
   const [editing, setEditing] = useState<"A" | "B">("A"),
-    [mode, setMode] = useState<Mode>("coverage");
-  const [combined, setCombined] = useState(
-    initial.combined ?? { A: false, B: false },
-  );
+    [mode, setMode] = useState<Mode>(
+      initial.cameraOnly?.A
+        ? "coverage"
+        : ((initial.view ?? "coverage") as Mode),
+    );
   const [cameraOnly, setCameraOnly] = useState(
     initial.cameraOnly ?? { A: false, B: false },
   );
@@ -138,7 +149,26 @@ export default function App() {
     [direct, setDirect] = useState(false);
   const board = useRef<HTMLDivElement>(null),
     timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const workspace = useRef<HTMLElement>(null);
+  const workspace = useRef<HTMLDivElement>(null);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    try {
+      const saved = localStorage.getItem("optical-theme");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch {
+      /* Storage can be unavailable in private browsers. */
+    }
+    return matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem("optical-theme", theme);
+    } catch {
+      /* Theme still works for this session. */
+    }
+  }, [theme]);
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
     const update = () =>
@@ -156,7 +186,7 @@ export default function App() {
     bb = useAnimatedConfig(b, direct);
   const active = editing === "A" ? a : b,
     setActive = editing === "A" ? setA : setB;
-  const session = { a, b, compare, combined, cameraOnly },
+  const session = { a, b, compare, cameraOnly, view: mode },
     info = cameraOnly[editing]
       ? {
           ...MODES[0],
@@ -197,6 +227,7 @@ export default function App() {
         return (
           <ApertureDiagram
             config={config}
+            announcedConfig={name === "A" ? a : b}
             blades={blades}
             choose={(value) =>
               (name === "A" ? setA : setB)((c) => ({ ...c, aperture: value }))
@@ -210,7 +241,7 @@ export default function App() {
           <Suspense
             fallback={<div className="loading">Loading 3D laboratory…</div>}
           >
-            <Frustum config={config} wireframe={wireframe} />
+            <Frustum config={config} wireframe={wireframe} theme={theme} />
           </Suspense>
         );
       case "preview":
@@ -222,7 +253,7 @@ export default function App() {
     }
   };
   return (
-    <>
+    <div className="app-shell" ref={workspace}>
       <a className="skip-link" href="#laboratory">
         Skip to visualisation
       </a>
@@ -257,6 +288,16 @@ export default function App() {
             <Link2 size={16} />
             Share
           </Button>
+          <Button
+            variant="outline"
+            role="switch"
+            aria-label="Dark theme"
+            aria-checked={theme === "dark"}
+            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+          >
+            <Moon size={16} />
+            <span className="theme-label">Theme</span>
+          </Button>
           <a
             className="repo-link"
             href="https://github.com/maninka123/Interactive-Camera-FOV-Simulator"
@@ -269,7 +310,7 @@ export default function App() {
           </a>
         </nav>
       </header>
-      <main className="workspace-main" ref={workspace}>
+      <main className="workspace-main">
         <details className="intro-disclosure">
           <summary>About the optical explorer</summary>
           <section className="intro">
@@ -324,7 +365,7 @@ export default function App() {
               size="sm"
               onClick={() => {
                 setB({ ...a });
-                setCombined((states) => ({ ...states, B: states.A }));
+
                 setCameraOnly((states) => ({ ...states, B: states.A }));
                 toast("Configuration A copied to B");
               }}
@@ -339,7 +380,7 @@ export default function App() {
                 setA({ ...DEFAULT });
                 setB({ ...DEFAULT, focal: 50 });
                 setEditing("A");
-                setCombined({ A: false, B: false });
+
                 setCameraOnly({ A: false, B: false });
               }}
             >
@@ -350,12 +391,12 @@ export default function App() {
         <div className="mobile-config-bar">
           <div>
             <strong>
-              {active.sensor} · {active.focal} mm
+              {active.sensor} · {display(active.focal)} mm
             </strong>
             <span>
               {cameraOnly[editing]
                 ? `${display(active.width)} × ${display(active.height)} mm · camera only`
-                : `f/${active.aperture} · ${display(calculate(active).horizontal, 1)}° horizontal`}
+                : `f/${display(active.aperture)} · ${display(calculate(active).horizontal, 1)}° horizontal`}
             </span>
           </div>
           <Button
@@ -392,25 +433,18 @@ export default function App() {
               config={active}
               change={setActive}
               reset={() => {
-                setActive({ ...DEFAULT });
-                setCombined((states) => ({ ...states, [editing]: false }));
+                setActive(defaultConfiguration(editing));
+
                 setCameraOnly((states) => ({ ...states, [editing]: false }));
               }}
-              combined={combined[editing]}
               cameraOnly={cameraOnly[editing]}
               changeCameraOnly={(only) => {
                 setCameraOnly((states) => ({ ...states, [editing]: only }));
                 setMode("coverage");
-              }}
-              combine={() => {
-                const next = !combined[editing];
-                setCombined((states) => ({ ...states, [editing]: next }));
-                setCameraOnly((states) => ({ ...states, [editing]: !next }));
-                setMode("coverage");
                 toast(
-                  next
-                    ? `Configuration ${editing}: camera and lens combined.`
-                    : `Configuration ${editing}: lens decoupled. Showing the camera sensor.`,
+                  only
+                    ? `Configuration ${editing}: camera only.`
+                    : `Configuration ${editing}: camera + lens.`,
                 );
               }}
             />
@@ -459,7 +493,7 @@ export default function App() {
                       size="sm"
                       onClick={() => {
                         setA({ ...DEFAULT, focal: 16, aperture: 4 });
-                        setCombined((states) => ({ ...states, A: true }));
+
                         setCameraOnly((states) => ({ ...states, A: false }));
                         setMode("preview");
                         toast("Wide-angle lens: see more of the same scene.");
@@ -472,7 +506,7 @@ export default function App() {
                       size="sm"
                       onClick={() => {
                         setA({ ...DEFAULT, circle: 29 });
-                        setCombined((states) => ({ ...states, A: true }));
+
                         setCameraOnly((states) => ({ ...states, A: false }));
                         setMode("coverage");
                         toast(
@@ -493,7 +527,7 @@ export default function App() {
                           focusM: 3,
                         });
                         setMode("dof");
-                        setCombined((states) => ({ ...states, A: true }));
+
                         setCameraOnly((states) => ({ ...states, A: false }));
                         toast(
                           "Portrait example: see the smaller acceptable-sharpness region.",
@@ -555,24 +589,22 @@ export default function App() {
                 {mode === "coverage" && (
                   <>
                     <span>Overlay formats</span>
-                    {['1/2.3"', '1/1.8"', '1"', "APS-C", "Full Frame"].map(
-                      (s) => (
-                        <label className="overlay-check" key={s}>
-                          <input
-                            type="checkbox"
-                            checked={overlays.includes(s)}
-                            onChange={(e) =>
-                              setOverlays((items) =>
-                                e.target.checked
-                                  ? [...items, s]
-                                  : items.filter((x) => x !== s),
-                              )
-                            }
-                          />
-                          {s}
-                        </label>
-                      ),
-                    )}
+                    {SENSORS.map((sensor) => sensor.name).map((s) => (
+                      <label className="overlay-check" key={s}>
+                        <input
+                          type="checkbox"
+                          checked={overlays.includes(s)}
+                          onChange={(e) =>
+                            setOverlays((items) =>
+                              e.target.checked
+                                ? [...items, s]
+                                : items.filter((x) => x !== s),
+                            )
+                          }
+                        />
+                        {s}
+                      </label>
+                    ))}
                   </>
                 )}
                 {mode === "aperture" && (
@@ -647,7 +679,8 @@ export default function App() {
                   {compare && (
                     <div className="config-caption">
                       <b>A</b>
-                      {a.sensor} · {a.focal} mm · f/{a.aperture}
+                      {a.sensor} · {display(a.focal)} mm · f/
+                      {display(a.aperture)}
                     </div>
                   )}
                   {view(aa, "A")}
@@ -656,7 +689,8 @@ export default function App() {
                   <div className="diagram-b">
                     <div className="config-caption">
                       <b>B</b>
-                      {b.sensor} · {b.focal} mm · f/{b.aperture}
+                      {b.sensor} · {display(b.focal)} mm · f/
+                      {display(b.aperture)}
                     </div>
                     {view(bb, "B")}
                   </div>
@@ -676,6 +710,34 @@ export default function App() {
                 </span>
               </div>
               <div className="learning">
+                {compare && !cameraOnly.A && !cameraOnly.B && (
+                  <div
+                    className="comparison-summary"
+                    aria-label="A and B field of view"
+                  >
+                    <span>
+                      <b>A</b> {display(calculate(a).horizontal, 1)}° horizontal
+                    </span>
+                    <span>
+                      <b>B</b> {display(calculate(b).horizontal, 1)}° horizontal
+                    </span>
+                    <span>
+                      B is{" "}
+                      {display(
+                        Math.abs(
+                          calculate(b).sceneWidthM / calculate(a).sceneWidthM -
+                            1,
+                        ) * 100,
+                        1,
+                      )}
+                      %{" "}
+                      {calculate(b).sceneWidthM < calculate(a).sceneWidthM
+                        ? "narrower"
+                        : "wider"}{" "}
+                      on its target plane.
+                    </span>
+                  </div>
+                )}
                 <details className="view-explanation">
                   <summary>About this view</summary>
                   <h3>{info.title}</h3>
@@ -752,15 +814,22 @@ export default function App() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const svg = board.current?.querySelector("svg.optical-svg");
-                    if (svg) downloadDiagram(svg as SVGSVGElement);
+                    const svg = board.current?.querySelector(
+                      `.diagram-${editing.toLowerCase()} svg.optical-svg, .diagram-${editing.toLowerCase()} .iris-feature svg`,
+                    );
+                    if (svg)
+                      downloadDiagram(
+                        svg as SVGSVGElement,
+                        cameraOnly[editing] ? "camera" : mode,
+                        editing,
+                      );
                     else
                       toast(
-                        "SVG export is available in the sensor, ray, preview, scene and depth-of-field views.",
+                        "Use the 2D alternative or a diagram tab to export an SVG.",
                       );
                   }}
                 >
-                  Diagram SVG
+                  Diagram SVG{compare ? ` · ${editing}` : ""}
                 </Button>
               </div>
             </Card>
@@ -812,6 +881,6 @@ export default function App() {
           </>
         )}
       </div>
-    </>
+    </div>
   );
 }

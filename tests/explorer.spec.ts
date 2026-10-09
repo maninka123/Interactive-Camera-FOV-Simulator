@@ -51,10 +51,13 @@ test("custom inputs, presets, incompatible coverage and optical invariants", asy
   await page.getByText("Resolution & pixel size", { exact: true }).click();
   await page.getByLabel("Resolution is the physical pixel array").uncheck();
   await expect(page.getByText("N/A · output resolution")).toBeVisible();
-  await page.getByRole("button", { name: "Combine camera + lens" }).click();
+  const lensSwitch = page.getByRole("switch", { name: "Camera + lens" });
+  await expect(lensSwitch).toHaveAttribute("aria-checked", "true");
+  await lensSwitch.click();
   await expect(
-    page.getByRole("button", { name: "Camera + lens combined" }),
+    page.getByRole("heading", { name: "Camera only", exact: true }),
   ).toBeVisible();
+  await lensSwitch.click();
   await page.getByRole("button", { name: "Reset configuration A" }).click();
   await expect(page.getByTestId("horizontal-A")).toContainText("54.4");
   expect(errors).toEqual([]);
@@ -157,6 +160,17 @@ test("comparison values stay independent, copy and reset work, share URL round-t
     "100",
   );
   await selectSettings(page, "Camera");
+  await page.getByLabel("Sensor format", { exact: true }).selectOption("APS-C");
+  const svgDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Diagram SVG · B", exact: true })
+    .click();
+  const exported = await svgDownload;
+  const stream = await exported.createReadStream();
+  let svgText = "";
+  for await (const chunk of stream!) svgText += chunk.toString();
+  expect(svgText).toContain("APS-C");
+  expect(svgText).not.toContain("Full Frame");
   for (const name of ["Aperture", "Image preview", "3D field of view"]) {
     await page.getByRole("tab", { name, exact: true }).click();
     await expect(page.locator(".config-caption")).toHaveCount(2);
@@ -351,28 +365,16 @@ test("preset sensor sizes lock, custom sliders and validity explain dimensions a
   ).toBeVisible();
 });
 
-test("pairing toggles colour, camera-only view and decoupling survive sharing independently", async ({
+test("camera/lens switch has one consistent state and sharing preserves independent configurations", async ({
   page,
   context,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("./");
-  const originalColour = await page
-    .locator(".combine")
-    .evaluate((e) => getComputedStyle(e).backgroundColor);
-  await page
-    .getByRole("button", { name: "Combine camera + lens", exact: true })
-    .click();
-  const paired = page.getByRole("button", {
-    name: "Camera + lens combined",
-    exact: true,
-  });
-  await expect(paired).toHaveAttribute("aria-pressed", "true");
-  expect(
-    await paired.evaluate((e) => getComputedStyle(e).backgroundColor),
-  ).not.toBe(originalColour);
-  const toggle = page.getByRole("switch", { name: "Show camera only" });
-  await toggle.check();
+  const lens = page.getByRole("switch", { name: "Camera + lens" });
+  await expect(lens).toHaveAttribute("aria-checked", "true");
+  await lens.click();
+  await expect(lens).toHaveAttribute("aria-checked", "false");
   await expect(page.getByTestId("lens-image-circle")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "Camera only", exact: true }),
@@ -380,39 +382,26 @@ test("pairing toggles colour, camera-only view and decoupling survive sharing in
   await expect(
     page.getByRole("tab", { name: "Aperture", exact: true }),
   ).toBeDisabled();
-  await toggle.uncheck();
-  await expect(page.getByTestId("lens-image-circle")).toBeVisible();
+  await lens.click();
   await expect(page.getByTestId("horizontal-A")).toContainText("54.4");
-  await paired.click();
-  await expect(page.getByTestId("lens-image-circle")).toHaveCount(0);
-  await expect(
-    page.getByRole("switch", { name: "Show camera only" }),
-  ).toHaveCount(0);
+  await lens.click();
   await page.getByRole("button", { name: "Compare", exact: true }).click();
   await page.getByRole("button", { name: "Edit B" }).click();
-  await page
-    .getByRole("button", { name: "Combine camera + lens", exact: true })
-    .click();
+  await expect(lens).toHaveAttribute("aria-checked", "true");
   await expect(
     page.locator('.diagram-a [data-testid="lens-image-circle"]'),
   ).toHaveCount(0);
   await expect(
     page.locator('.diagram-b [data-testid="lens-image-circle"]'),
   ).toBeVisible();
+  await page.getByRole("tab", { name: "Aperture", exact: true }).click();
   await page.getByRole("button", { name: "Share", exact: true }).click();
   await page.goto(await page.evaluate(() => navigator.clipboard.readText()));
   await expect(
     page.getByRole("heading", { name: "Camera only", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Edit B" }).click();
-  await expect(
-    page.getByRole("button", { name: "Camera + lens combined", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("tab", { name: "Aperture", exact: true }).click();
-  await page.getByRole("button", { name: "Edit A" }).click();
-  await expect(
-    page.getByRole("tab", { name: "Sensor coverage", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+  await expect(lens).toHaveAttribute("aria-checked", "true");
 });
 
 test("diagram labels remain outside sensor objects, height labels stay left and SVG typography matches the app", async ({
@@ -438,7 +427,10 @@ test("diagram labels remain outside sensor objects, height labels stay left and 
     const widthLabel = (await page
       .getByTestId("sensor-width-label")
       .boundingBox())!;
-    expect(callout.x).toBeGreaterThan(object.x + object.width);
+    expect(
+      callout.x > object.x + object.width ||
+        callout.y > object.y + object.height,
+    ).toBe(true);
     expect(heightLabel.x + heightLabel.width).toBeLessThan(object.x);
     expect(widthLabel.y).toBeGreaterThan(object.y + object.height);
   }

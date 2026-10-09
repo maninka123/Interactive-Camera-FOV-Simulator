@@ -4,8 +4,14 @@ import {
   Activity,
   MoveHorizontal,
   Camera,
+  Layers,
 } from "lucide-react";
-import { calculate, display, type Configuration } from "../lib/optics";
+import {
+  calculate,
+  display,
+  coveragePercent,
+  type Configuration,
+} from "../lib/optics";
 import { Card } from "./ui/card";
 export function ResultsPanel({
   config: c,
@@ -79,8 +85,8 @@ export function ResultsPanel({
         </Card>
         <Card className="model-note">
           <p>
-            Combine the camera and lens to see field of view, image-circle
-            coverage and scene measurements.
+            Switch to Camera + lens to see field of view, image-circle coverage
+            and scene measurements.
           </p>
         </Card>
       </aside>
@@ -119,9 +125,28 @@ export function ResultsPanel({
           )}
           <div>
             <strong>{r.coverageStatus}</strong>
-            <span>{display(r.coverage * 100, 1)}% illuminated sensor area</span>
+            <span>{coveragePercent(r.coverage)}% illuminated sensor area</span>
           </div>
         </div>
+        <dl className="equivalent-readouts spec-list">
+          <div>
+            <dt>Crop factor</dt>
+            <dd>{display(r.cropFactor)}×</dd>
+          </div>
+          <div>
+            <dt title="Diagonal field-of-view equivalent on a 36 x 24 mm sensor">
+              35 mm equivalent
+            </dt>
+            <dd>{display(r.focalEquivalent35)} mm</dd>
+          </div>
+        </dl>
+        {r.finiteImageDistance / c.focal > 1.05 && (
+          <p className="close-focus-warning" role="status">
+            Close focus: image distance {display(r.finiteImageDistance)} mm.
+            Finite-focus framing may differ substantially from the nominal field
+            of view.
+          </p>
+        )}
         <details className="result-details">
           <summary>Lens & sensor metrics</summary>
           <dl className="spec-list">
@@ -138,8 +163,8 @@ export function ResultsPanel({
               <dd>{display(r.apertureDiameter)} mm</dd>
             </div>
             <div>
-              <dt>Light vs f/1</dt>
-              <dd>{display(r.relativeLight * 100, 2)}%</dd>
+              <dt>Light vs f/2.8</dt>
+              <dd>{display(r.relativeLightVs28 * 100, 2)}%</dd>
             </div>
           </dl>
         </details>
@@ -195,6 +220,22 @@ export function ResultsPanel({
           </p>
         )}
       </Card>
+      <Card className="result-card dof-result">
+        <div className="card-heading">
+          <Layers size={17} />
+          <h2>Depth of field</h2>
+        </div>
+        <p className="dof-range">
+          {display(r.dof.nearM)} m →{" "}
+          {Number.isFinite(r.dof.farM)
+            ? `${display(r.dof.farM)} m`
+            : "infinity"}
+        </p>
+        <p className="input-note">
+          Focus {display(c.focusM)} m · Hyperfocal {display(r.dof.hyperfocalM)}{" "}
+          m
+        </p>
+      </Card>
       <Card className="model-note">
         <details>
           <summary>Model notes</summary>
@@ -206,13 +247,6 @@ export function ResultsPanel({
             Image circle coverage alone does not establish real vignetting,
             distortion or sharpness.
           </p>
-          {r.finiteImageDistance / c.focal > 1.05 && (
-            <p className="small-warning">
-              Close focus: the thin-lens image distance is{" "}
-              {display(r.finiteImageDistance)} mm. Finite-focus framing may
-              differ substantially.
-            </p>
-          )}
         </details>
       </Card>
     </aside>

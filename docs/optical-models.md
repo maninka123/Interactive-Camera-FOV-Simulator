@@ -6,7 +6,7 @@ All reported optical results use `src/lib/optics.ts`. Sensor dimensions, focal l
 
 For sensor dimension `q` and focal length `f`, `θ = 2 atan(q / (2f))`. Horizontal and vertical angles use width/height; diagonal FOV uses `sqrt(width² + height²)`. A perpendicular target plane at distance `d` has width `d × width / f` and height `d × height / f`. This rectilinear, infinity-focus approximation excludes distortion and focus breathing. See [Edmund Optics’ imaging parameter calculator](https://www.edmundoptics.com/knowledge-center/tech-tools/imaging-system-parameter-calculator/).
 
-The ray diagram uses separate distance scales for the sensor and scene while preserving the boundary-ray slopes. The 3D observer can orbit independently of the simulated camera. Its coordinate axes are +X right, +Y up, +Z forward. The scene is scaled uniformly to fit the observer view.
+The ray diagram is schematic: sensor, lens and target remain separated, and extreme angles are compressed to keep the sensor visible. Rays through the optical centre remain collinear, but drawing angles and distances are not physical scales. Reported FOV and scene dimensions always use the actual inputs. The 3D observer can orbit independently of the simulated camera. Its coordinate axes are +Y up and +Z forward; looking along +Z, +X points left (right-handed coordinates). The scene is scaled uniformly to fit the observer view.
 
 For finite thin-lens focus at `s`, image distance is `v = fs / (s − f)`. A notice appears when `v/f > 1.05`; nominal FOV is still based on `f`. The focus distance must exceed `f`.
 
@@ -18,7 +18,7 @@ Status labels are geometric: **fully covered** when diameter reaches the sensor 
 
 ## Aperture
 
-Entrance pupil diameter is `f/N`, area is `π(f/(2N))²`, and relative irradiance versus f/1 is `1/N²` under equal exposure and transmission. Ratios between f-numbers use their inverse squares. Rounded full-stop labels are approximate. The illustrated iris uses a regular polygon; it is not a mechanical simulation, and its area does not replace the circular entrance-pupil calculation. F-number is geometric; T-stop includes transmission losses. No aperture change modifies nominal FOV.
+Entrance pupil diameter is `f/N`, area is `π(f/(2N))²`, and relative irradiance versus f/2.8 is `(2.8/N)²` under equal exposure and transmission. Every light percentage in the interface uses that reference. Exports also retain the original f/1 ratio `1/N²` for compatibility. Ratios between f-numbers use their inverse squares. Rounded full-stop labels are approximate. The illustrated iris uses a regular polygon; it is not a mechanical simulation, and its area does not replace the circular entrance-pupil calculation. F-number is geometric; T-stop includes transmission losses. No aperture change modifies nominal FOV.
 
 The aperture view includes a separate illustrative image. With shutter speed and ISO fixed, RGB intensities are scaled in linear colour space by `(2.8/N)²` relative to f/2.8. Highlights can clip; this is not a camera response or metering simulation. **Keep image brightness** fixes that multiplier to one, while background blur continues to change.
 
@@ -36,9 +36,11 @@ For aperture `N`, blur criterion `c` and focus distance `s` in mm, let `K = f²/
 
 ## Fixed-scene preview
 
-Every scene vertex projects as `x = fX/Z`, `y = f(Y−1.6)/Z`, with a fixed camera height of 1.6 m. Sensor dimensions map these coordinates to the frame without stretching. Buildings, trees and people have fixed world positions at several depths. Sky/ground are procedural, with no limited source photograph. Target-distance settings describe the separate measurement plane; they do not move the preview camera or its scene. The reference frame is 36 × 24 mm at 35 mm. No exposure, blur, distortion or image-circle masking is simulated in the preview; use the coverage view to inspect compatibility.
+Every scene vertex projects as `x = fX/Z`, `y = f(Y−1.6)/Z`, with a fixed camera height of 1.6 m. Sensor dimensions map these coordinates to the frame without stretching. Buildings, trees and people have fixed world positions at several depths. Sky/ground are procedural, with no limited source photograph. Target-distance settings describe the separate measurement plane; they do not move the preview camera or its scene. The reference frame is 36 × 24 mm at 35 mm. Regions outside the centred image circle are darkened geometrically when coverage is incomplete. Exposure, blur and distortion are not simulated in this view.
 
 ## Sensor presets
+
+The coverage view includes magnified sensor detail when the sensor is much smaller than the selected image circle. Image-preview dark corners show the ideal centred image-circle boundary, not a measured illumination profile.
 
 Inch names are optical-format labels, never literal physical dimensions. Active dimensions vary with manufacturer, pixel array and crop. Preset dimensions are fixed while a preset is selected; choose **Custom** to edit them with numeric fields or sliders. Custom dimensions display a matching preset within 0.02 mm, or the closest representative format using relative width and height differences. That estimate does not establish an optical-format designation or product availability. Green/red checks report the supported dimension range and whether the selected image circle covers the sensor. Resolution values are editable examples rather than guaranteed specifications for a format. Some example arrays imply slightly nonsquare pixels, which is why horizontal and vertical pitches are shown separately.
 
@@ -56,3 +58,11 @@ Inch names are optical-format labels, never literal physical dimensions. Active 
 | Full Frame        | 36 × 24                    | [Nikon format explanation](https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/dx-nikkor-lenses)                                       |
 
 For the historical naming convention and sensor-size caveats, see [Edmund Optics’ camera guide](https://www.edmundoptics.com/knowledge-center/application-notes/imaging/camera-types-and-interfaces-for-machine-vision-applications/).
+
+## Interface and sharing
+
+Light readouts use f/2.8 as their common reference. Crop factor and 35 mm equivalent focal length use the ratio of the full-frame diagonal to the active sensor diagonal; aspect ratios can differ. Close-focus framing notices remain visible in the results panel.
+
+Shared links include the active view and the independent camera/lens states. A preset sensor name with mismatched dimensions becomes Custom rather than locking incorrect values. Configuration B resets to 50 mm consistently.
+
+The 3D renderer is loaded on demand and displays width, height and distance labels in the scene. Enable depth-of-field planes to see the near/far boundaries; infinity and out-of-view boundaries use continuation labels.

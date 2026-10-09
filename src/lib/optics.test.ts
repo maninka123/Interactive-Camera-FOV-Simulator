@@ -10,7 +10,7 @@ import {
   sceneExtent,
 } from "./optics";
 import { readSession, toCsv, toJson } from "./sharing";
-import { SENSORS } from "./presets";
+import { SENSORS, CIRCLES } from "./presets";
 
 describe("rectilinear geometry and unit conversions", () => {
   it("matches a full-frame 50 mm numerical reference", () => {
@@ -187,5 +187,67 @@ describe("validation, sharing and export", () => {
     expect(csv).toContain('"1/2.3"""');
     expect(csv).toContain('"B","horizontal_fov"');
     expect(csv).toContain('"mean_angular_sampling_y"');
+  });
+});
+
+describe("format consistency and new readouts", () => {
+  it("every format-equivalent image circle covers the matching sensor", () => {
+    for (const sensor of SENSORS) {
+      const circle = CIRCLES.find(
+        (p) => p.name === `${sensor.name} equivalent`,
+      );
+      expect(circle).toBeDefined();
+      expect(
+        calculate({
+          ...DEFAULT,
+          ...sensor,
+          sensor: sensor.name,
+          circle: circle!.value,
+        }).coverage,
+      ).toBe(1);
+    }
+  });
+  it("normalizes mismatched preset names and preserves the active view", () => {
+    const value = {
+      version: 1,
+      a: { ...DEFAULT, width: 10, height: 10 },
+      b: { ...DEFAULT, focal: 50 },
+      compare: true,
+      view: "dof",
+    };
+    const decoded = readSession(
+      "?config=" + encodeURIComponent(JSON.stringify(value)),
+    );
+    expect(decoded.a.sensor).toBe("Custom");
+    expect(decoded.view).toBe("dof");
+    expect(
+      readSession(
+        "?config=" +
+          encodeURIComponent(JSON.stringify({ ...value, view: "invalid" })),
+      ).view,
+    ).toBe("coverage");
+  });
+  it("computes full-frame crop equivalence and the f/2.8 light reference", () => {
+    expect(calculate(DEFAULT).cropFactor).toBe(1);
+    expect(calculate(DEFAULT).focalEquivalent35).toBe(35);
+    expect(calculate(DEFAULT).relativeLightVs28).toBe(1);
+    expect(
+      calculate({
+        ...DEFAULT,
+        sensor: "Custom",
+        width: 18,
+        height: 12,
+        focal: 50,
+      }).cropFactor,
+    ).toBe(2);
+    expect(
+      calculate({
+        ...DEFAULT,
+        sensor: "Custom",
+        width: 18,
+        height: 12,
+        focal: 50,
+      }).focalEquivalent35,
+    ).toBe(100);
   });
 });

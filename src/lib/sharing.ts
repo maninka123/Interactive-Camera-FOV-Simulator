@@ -1,3 +1,4 @@
+import { SENSORS } from "./presets";
 import {
   DEFAULT,
   calculate,
@@ -9,8 +10,21 @@ export type Session = {
   b: Configuration;
   compare: boolean;
   combined?: { A: boolean; B: boolean };
+  view?: string;
   cameraOnly?: { A: boolean; B: boolean };
 };
+function normalizeSensor(c: Configuration): Configuration {
+  const preset = SENSORS.find((s) => s.name === c.sensor);
+  return {
+    ...c,
+    sensor:
+      preset &&
+      Math.abs(preset.width - c.width) < 1e-6 &&
+      Math.abs(preset.height - c.height) < 1e-6
+        ? preset.name
+        : "Custom",
+  };
+}
 export function readSession(search: string): Session {
   const fallback = {
     a: { ...DEFAULT },
@@ -34,12 +48,24 @@ export function readSession(search: string): Session {
       typeof (value as { A?: unknown }).A === "boolean" &&
       typeof (value as { B?: unknown }).B === "boolean";
     return {
-      a: data.a,
-      b: data.b,
+      a: normalizeSensor(data.a),
+      b: normalizeSensor(data.b),
+      view: [
+        "coverage",
+        "aperture",
+        "rays",
+        "frustum",
+        "preview",
+        "distance",
+        "dof",
+      ].includes(data.view)
+        ? data.view
+        : "coverage",
+
       compare: data.compare,
       combined: validStates(data.combined)
         ? data.combined
-        : { A: false, B: false },
+        : { A: true, B: true },
       cameraOnly: validStates(data.cameraOnly)
         ? data.cameraOnly
         : { A: false, B: false },
@@ -83,6 +109,8 @@ export function toCsv(session: Session) {
       ["resolution_x", c.pixelsX, "px"],
       ["resolution_y", c.pixelsY, "px"],
       ["focal_length", c.focal, "mm"],
+      ["crop_factor", r.cropFactor, ""],
+      ["focal_equivalent_35mm", r.focalEquivalent35, "mm"],
       ["f_number", c.aperture, ""],
       ["image_circle", c.circle, "mm"],
       ["focus_distance", c.focusM, "m"],
@@ -98,6 +126,7 @@ export function toCsv(session: Session) {
       ["coverage", r.coverage * 100, "%"],
       ["aperture_diameter", r.apertureDiameter, "mm"],
       ["relative_light_vs_f1", r.relativeLight, ""],
+      ["relative_light_vs_f2_8", r.relativeLightVs28, ""],
       ["pixel_pitch_x", r.pitchX, "um"],
       ["pixel_pitch_y", r.pitchY, "um"],
       ["mean_angular_sampling_x", r.meanAngularX, "deg/px"],
@@ -129,14 +158,29 @@ export function download(filename: string, data: BlobPart, type: string) {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export function downloadDiagram(svg: SVGSVGElement) {
+export function downloadDiagram(
+  svg: SVGSVGElement,
+  view = "diagram",
+  configuration = "A",
+) {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   clone.style.fontFamily = getComputedStyle(svg).fontFamily;
-  clone.style.background = "#f8fafd";
+  clone.style.background = getComputedStyle(svg).backgroundColor;
+  const originals = [svg, ...svg.querySelectorAll("*")];
+  const copies = [clone, ...clone.querySelectorAll("*")];
+  originals.forEach((element, i) => {
+    for (const name of ["fill", "stroke", "stop-color"]) {
+      if (element.getAttribute(name)?.includes("var("))
+        copies[i].setAttribute(
+          name,
+          getComputedStyle(element).getPropertyValue(name),
+        );
+    }
+  });
   clone.style.color = "#334155";
   download(
-    "optical-diagram.svg",
+    `optical-${view}-${configuration}.svg`,
     new XMLSerializer().serializeToString(clone),
     "image/svg+xml",
   );
