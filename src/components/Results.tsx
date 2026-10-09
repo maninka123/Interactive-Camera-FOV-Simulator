@@ -125,7 +125,10 @@ export function ResultsPanel({
           )}
           <div>
             <strong>{r.coverageStatus}</strong>
-            <span>{coveragePercent(r.coverage)}% illuminated sensor area</span>
+            <span className="coverage-readout">
+              {coveragePercent(r.coverage)}%
+              <span className="coverage-description"> illuminated sensor area</span>
+            </span>
           </div>
         </div>
         <dl className="equivalent-readouts spec-list">
