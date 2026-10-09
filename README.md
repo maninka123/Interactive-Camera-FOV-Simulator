@@ -1,8 +1,22 @@
 # Camera & Lens Optical Explorer
 
-An interactive optics laboratory that runs entirely in your browser, and an independent companion to the [original LiDAR/camera analysis project](https://github.com/maninka123/Lidar_camera_FOV_analysis).
+Explore how sensor size, focal length and aperture affect field of view, lens coverage, brightness and depth of field. Adjust settings live and compare two camera-and-lens configurations.
 
 [Open the camera & lens explorer](https://maninka123.github.io/Interactive-Camera-FOV-Simulator/camera-lens-explorer/) · [Feature overview and usage guide](https://maninka123.github.io/Interactive-Camera-FOV-Simulator/#guide)
+
+## See it in action
+
+**Sensor coverage and live results** — compare the sensor's dimensions with the lens image circle.
+
+![Sensor coverage controls, diagram and live optical results](docs/images/explorer-overview.png)
+
+**Aperture and image effects** — see the opening alongside changes in brightness and background blur.
+
+![Aperture opening, image preview and f-stop comparison](docs/images/aperture-view.png)
+
+**Interactive 3D field of view** — orbit, pan and zoom around the camera's viewing volume.
+
+![Interactive 3D camera field of view and target plane](docs/images/frustum-view.png)
 
 ## Run locally
 
@@ -28,9 +42,3 @@ npm run build
 The calculation tests cover reference values, units, exact coverage geometry, optical invariants, pixel sampling, depth of field, input validation and sharing. Browser tests exercise all views, independent comparison, downloads, keyboard navigation and phone/tablet layouts. Three.js loads only when its tab is active.
 
 See [equations, preset sources and limitations](docs/optical-models.md) for the calculation models.
-
-## GitHub Pages
-
-The [deployment workflow](.github/workflows/pages.yml) validates and builds this folder, then publishes the feature overview, usage guide and app at `/Interactive-Camera-FOV-Simulator/camera-lens-explorer/`. In repository **Settings → Pages**, the publishing source is **GitHub Actions**. Pushes to `main` deploy automatically; pull requests run validation without publishing.
-
-Stack: React, TypeScript, Vite, Tailwind, local shadcn-style UI components, Lucide, Three.js/React Three Fiber, Vitest and Playwright.

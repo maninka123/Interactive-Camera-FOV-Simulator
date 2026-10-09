@@ -2,6 +2,9 @@ import { useEffect, useId, useState } from "react";
 import {
   Aperture,
   Camera,
+  CheckCircle2,
+  AlertTriangle,
+  Unlink2,
   ChevronDown,
   CircleHelp,
   Crosshair,
@@ -28,6 +31,8 @@ function Field({
   step = 0.1,
   unit,
   hint,
+  readOnly = false,
+  onValidityChange,
 }: {
   label: string;
   value: number;
@@ -37,6 +42,8 @@ function Field({
   step?: number;
   unit: string;
   hint?: string;
+  readOnly?: boolean;
+  onValidityChange?: (valid: boolean) => void;
 }) {
   const id = useId();
   const [draft, setDraft] = useState<string | null>(null);
@@ -69,12 +76,20 @@ function Field({
           min={min}
           max={max}
           step={step}
+          readOnly={readOnly}
           aria-invalid={invalid}
           aria-describedby={invalid ? `${id}-error` : undefined}
           onChange={(e) => {
             const raw = e.target.value;
             setDraft(raw);
             const n = Number(raw);
+            onValidityChange?.(
+              raw.trim() !== "" &&
+                Number.isFinite(n) &&
+                n >= min &&
+                n <= max &&
+                (step !== 1 || Number.isInteger(n)),
+            );
             if (
               raw !== "" &&
               Number.isFinite(n) &&
@@ -142,6 +157,8 @@ export function Controls({
   reset,
   combine,
   combined,
+  cameraOnly,
+  changeCameraOnly,
   name,
 }: {
   config: Configuration;
@@ -149,9 +166,29 @@ export function Controls({
   reset: () => void;
   combine: () => void;
   combined: boolean;
+  cameraOnly: boolean;
+  changeCameraOnly: (only: boolean) => void;
   name: string;
 }) {
   const r = calculate(c);
+  const [dimensionsValid, setDimensionsValid] = useState({
+    width: true,
+    height: true,
+  });
+  const custom = c.sensor === "Custom";
+  const matchedFormat = SENSORS.find(
+    (sensor) =>
+      Math.abs(sensor.width - c.width) <= 0.02 &&
+      Math.abs(sensor.height - c.height) <= 0.02,
+  );
+  const closestFormat =
+    matchedFormat ??
+    SENSORS.reduce((best, sensor) => {
+      const distance = (s: typeof sensor) =>
+        Math.hypot(Math.log(c.width / s.width), Math.log(c.height / s.height));
+      return distance(sensor) < distance(best) ? sensor : best;
+    });
+  const validDimensions = dimensionsValid.width && dimensionsValid.height;
   const [pane, setPane] = useState("camera");
   const panes = [
     { id: "camera", label: "Camera" },
@@ -188,6 +225,13 @@ export function Controls({
       step={step}
       unit={unit}
       hint={hint}
+      readOnly={(key === "width" || key === "height") && !custom}
+      onValidityChange={
+        key === "width" || key === "height"
+          ? (valid) =>
+              setDimensionsValid((states) => ({ ...states, [key]: valid }))
+          : undefined
+      }
     />
   );
   return (
@@ -246,6 +290,7 @@ export function Controls({
             value={c.sensor}
             options={SENSORS.map((s) => ({ label: s.name, value: s.name }))}
             change={(name) => {
+              setDimensionsValid({ width: true, height: true });
               const s = SENSORS.find((s) => s.name === name);
               change(
                 s
@@ -262,12 +307,116 @@ export function Controls({
             }}
           />
           <p className="input-note">
-            Representative active dimensions · editable
+            {custom
+              ? "Drag the sliders or type dimensions."
+              : "Preset dimensions · select Custom to edit."}
           </p>
           <div className="field-pair">
             {field("width", "Active width", "mm", 0.01)}
             {field("height", "Active height", "mm", 0.01)}
           </div>
+          {custom && (
+            <div className="custom-sensor-settings">
+              <div className="field-pair">
+                <label>
+                  Width slider
+                  <input
+                    className="range"
+                    aria-label="Custom sensor width slider"
+                    type="range"
+                    min={LIMITS.width[0]}
+                    max={LIMITS.width[1]}
+                    step="0.01"
+                    value={c.width}
+                    onChange={(e) => {
+                      set("width", Number(e.target.value));
+                      setDimensionsValid((states) => ({
+                        ...states,
+                        width: true,
+                      }));
+                    }}
+                  />
+                </label>
+                <label>
+                  Height slider
+                  <input
+                    className="range"
+                    aria-label="Custom sensor height slider"
+                    type="range"
+                    min={LIMITS.height[0]}
+                    max={LIMITS.height[1]}
+                    step="0.01"
+                    value={c.height}
+                    onChange={(e) => {
+                      set("height", Number(e.target.value));
+                      setDimensionsValid((states) => ({
+                        ...states,
+                        height: true,
+                      }));
+                    }}
+                  />
+                </label>
+              </div>
+              {validDimensions && (
+                <p className="format-match">
+                  {matchedFormat ? "Matches format" : "Closest format"}:{" "}
+                  <strong>{closestFormat.name}</strong>
+                  {matchedFormat ? "" : " (approximate)"}
+                </p>
+              )}
+              <div
+                className={`custom-size-status ${validDimensions ? "valid" : "invalid"}`}
+                role="status"
+              >
+                {validDimensions ? (
+                  <CheckCircle2 size={16} />
+                ) : (
+                  <AlertTriangle size={16} />
+                )}
+                <div>
+                  <strong>
+                    {validDimensions
+                      ? "Supported sensor dimensions"
+                      : "Outside the supported size range"}
+                  </strong>
+                  {!validDimensions && (
+                    <p>
+                      Enter width and height from 0.1 to 100 mm. Empty, zero and
+                      negative dimensions cannot define a sensor.
+                    </p>
+                  )}
+                </div>
+              </div>
+              {validDimensions && (
+                <div
+                  className={`custom-size-status ${r.coverage === 1 ? "valid" : "invalid"}`}
+                >
+                  {r.coverage === 1 ? (
+                    <CheckCircle2 size={16} />
+                  ) : (
+                    <AlertTriangle size={16} />
+                  )}
+                  <div>
+                    <strong>
+                      {r.coverage === 1
+                        ? "Fits the selected lens image circle"
+                        : "Selected lens cannot cover this sensor"}
+                    </strong>
+                    {r.coverage < 1 && (
+                      <p>
+                        The {display(c.circle)} mm image circle is smaller than
+                        the {display(r.sensorDiagonal)} mm sensor diagonal. Use
+                        a larger image circle or a smaller sensor.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              <p className="custom-sensor-note">
+                Geometry only; product availability is not checked.
+              </p>
+            </div>
+          )}
           <div className="derived-row">
             <span>
               Diagonal <b>{display(r.sensorDiagonal)} mm</b>
@@ -375,7 +524,7 @@ export function Controls({
             value={c.aperture}
             onChange={(e) => set("aperture", Number(e.target.value))}
           />
-          <div className="field-pair">
+          <div className="image-circle-fields">
             <Preset
               label="Image circle preset"
               value={
@@ -412,15 +561,32 @@ export function Controls({
               )}
             </div>
           </details>
-          <p className="input-note">
-            Projection: rectilinear / pinhole approximation
-          </p>
         </Card>
       </details>
-      <Button className="combine" onClick={combine}>
-        <Link2 size={16} />
+      <Button
+        className={`combine ${combined ? "is-combined" : ""}`}
+        onClick={combine}
+        aria-pressed={combined}
+        title={
+          combined
+            ? "Click again to decouple the camera and lens"
+            : "Combine the camera and lens"
+        }
+      >
+        {combined ? <Unlink2 size={16} /> : <Link2 size={16} />}
         {combined ? "Camera + lens combined" : "Combine camera + lens"}
       </Button>
+      {combined && (
+        <label className="camera-view-toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={cameraOnly}
+            onChange={(e) => changeCameraOnly(e.target.checked)}
+          />
+          <span>Show camera only</span>
+        </label>
+      )}
       <p className="combine-note">
         {combined
           ? "Combined configuration · all changes update live."

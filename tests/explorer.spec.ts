@@ -184,6 +184,9 @@ test("phone and tablet layouts, collapsible controls and reduced motion", async 
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await page
+      .getByLabel("Sensor format", { exact: true })
+      .selectOption("Custom");
     await page.getByLabel("Active width", { exact: true }).fill("40");
     await expect(page.getByLabel("Active width", { exact: true })).toHaveValue(
       "40",
@@ -288,4 +291,273 @@ test("wide-angle rays stay inside the diagram and object labels stay clear of th
   await expect(page.getByTestId("scene-object-callout")).toContainText(
     "266.7 px",
   );
+});
+
+test("preset sensor sizes lock, custom sliders and validity explain dimensions and lens coverage", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("./");
+  const format = page.getByLabel("Sensor format", { exact: true });
+  const width = page.getByLabel("Active width", { exact: true });
+  const height = page.getByLabel("Active height", { exact: true });
+  await format.selectOption('1/4"');
+  await expect(width).toHaveValue("3.2");
+  await expect(height).toHaveValue("2.4");
+  await expect(width).toHaveAttribute("readonly", "");
+  await expect(height).toHaveAttribute("readonly", "");
+  await format.selectOption("Custom");
+  await expect(width).not.toHaveAttribute("readonly", "");
+  await expect(page.locator(".format-match")).toHaveText(
+    'Matches format: 1/4"',
+  );
+  const slider = page.getByRole("slider", {
+    name: "Custom sensor width slider",
+  });
+  await slider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(width).toHaveValue("3.21");
+  await width.fill("7.2");
+  await height.fill("5.4");
+  await expect(page.locator(".format-match")).toHaveText(
+    'Matches format: 1/1.8"',
+  );
+  await width.fill("0");
+  await expect(width).toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page.getByText("Outside the supported size range"),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Empty, zero and negative dimensions cannot define a sensor.",
+      { exact: false },
+    ),
+  ).toBeVisible();
+  await expect(page.locator(".format-match")).toHaveCount(0);
+  await width.fill("7.8");
+  await expect(page.locator(".format-match")).toContainText(
+    'Closest format: 1/1.8" (approximate)',
+  );
+  await selectSettings(page, "Lens");
+  await page.getByLabel("Image circle diameter", { exact: true }).fill("5");
+  await selectSettings(page, "Camera");
+  await expect(
+    page.getByText("Selected lens cannot cover this sensor"),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Use a larger image circle or a smaller sensor.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+});
+
+test("pairing toggles colour, camera-only view and decoupling survive sharing independently", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("./");
+  const originalColour = await page
+    .locator(".combine")
+    .evaluate((e) => getComputedStyle(e).backgroundColor);
+  await page
+    .getByRole("button", { name: "Combine camera + lens", exact: true })
+    .click();
+  const paired = page.getByRole("button", {
+    name: "Camera + lens combined",
+    exact: true,
+  });
+  await expect(paired).toHaveAttribute("aria-pressed", "true");
+  expect(
+    await paired.evaluate((e) => getComputedStyle(e).backgroundColor),
+  ).not.toBe(originalColour);
+  const toggle = page.getByRole("switch", { name: "Show camera only" });
+  await toggle.check();
+  await expect(page.getByTestId("lens-image-circle")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Camera only", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Aperture", exact: true }),
+  ).toBeDisabled();
+  await toggle.uncheck();
+  await expect(page.getByTestId("lens-image-circle")).toBeVisible();
+  await expect(page.getByTestId("horizontal-A")).toContainText("54.4");
+  await paired.click();
+  await expect(page.getByTestId("lens-image-circle")).toHaveCount(0);
+  await expect(
+    page.getByRole("switch", { name: "Show camera only" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
+  await page.getByRole("button", { name: "Edit B" }).click();
+  await page
+    .getByRole("button", { name: "Combine camera + lens", exact: true })
+    .click();
+  await expect(
+    page.locator('.diagram-a [data-testid="lens-image-circle"]'),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('.diagram-b [data-testid="lens-image-circle"]'),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Share", exact: true }).click();
+  await page.goto(await page.evaluate(() => navigator.clipboard.readText()));
+  await expect(
+    page.getByRole("heading", { name: "Camera only", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Edit B" }).click();
+  await expect(
+    page.getByRole("button", { name: "Camera + lens combined", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("tab", { name: "Aperture", exact: true }).click();
+  await page.getByRole("button", { name: "Edit A" }).click();
+  await expect(
+    page.getByRole("tab", { name: "Sensor coverage", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+});
+
+test("diagram labels remain outside sensor objects, height labels stay left and SVG typography matches the app", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("./");
+  const format = page.getByLabel("Sensor format", { exact: true });
+  const formats = await format
+    .locator("option")
+    .evaluateAll((options) =>
+      options
+        .map((o) => (o as HTMLOptionElement).value)
+        .filter((v) => v !== "Custom"),
+    );
+  for (const sensor of formats) {
+    await format.selectOption(sensor);
+    const object = (await page.getByTestId("camera-sensor").boundingBox())!;
+    const callout = (await page.getByTestId("sensor-callout").boundingBox())!;
+    const heightLabel = (await page
+      .getByTestId("sensor-height-label")
+      .boundingBox())!;
+    const widthLabel = (await page
+      .getByTestId("sensor-width-label")
+      .boundingBox())!;
+    expect(callout.x).toBeGreaterThan(object.x + object.width);
+    expect(heightLabel.x + heightLabel.width).toBeLessThan(object.x);
+    expect(widthLabel.y).toBeGreaterThan(object.y + object.height);
+  }
+  for (const mode of [
+    "Sensor coverage",
+    "Optical rays",
+    "Image preview",
+    "Scene & pixels",
+    "Depth of field",
+  ]) {
+    await page.getByRole("tab", { name: mode, exact: true }).click();
+    expect(
+      await page
+        .locator(".optical-svg text")
+        .evaluateAll((labels) =>
+          labels.every(
+            (label) =>
+              getComputedStyle(label).fontFamily ===
+              getComputedStyle(document.body).fontFamily,
+          ),
+        ),
+    ).toBe(true);
+  }
+  await page.getByRole("tab", { name: "Scene & pixels", exact: true }).click();
+  const measurement = (await page
+    .getByTestId("scene-height-label")
+    .boundingBox())!;
+  const object = (await page.getByTestId("scene-object").boundingBox())!;
+  expect(measurement.x + measurement.width).toBeLessThan(object.x);
+  const calloutSizes = await page
+    .getByTestId("scene-object-callout")
+    .locator("text")
+    .evaluateAll((labels) =>
+      labels.map((label) => Number(label.getAttribute("font-size"))),
+    );
+  expect(Math.max(...calloutSizes)).toBeLessThanOrEqual(18);
+  const font = await page
+    .locator(".optical-svg")
+    .evaluate((e) => getComputedStyle(e).fontFamily);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Diagram SVG", exact: true }).click();
+  const stream = await (await downloadPromise).createReadStream();
+  let exported = "";
+  for await (const chunk of stream!) exported += chunk.toString();
+  expect(exported).toContain(font.replaceAll('"', "&quot;"));
+  expect(exported).not.toContain("Arial");
+});
+
+test("aperture preview shows exposure changes, can compensate brightness and fits a laptop", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const [width, height] of [
+    [1366, 768],
+    [1440, 900],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.goto("./");
+    await page.getByRole("tab", { name: "Aperture", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Choose f/1.4", exact: true })
+      .click();
+    const brightness = () =>
+      page.locator(".aperture-image").evaluate(async (element) => {
+        const svg = new XMLSerializer().serializeToString(element);
+        const url = URL.createObjectURL(
+          new Blob([svg], { type: "image/svg+xml" }),
+        );
+        try {
+          const img = new Image();
+          img.src = url;
+          await img.decode();
+          const canvas = document.createElement("canvas");
+          canvas.width = 360;
+          canvas.height = 200;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, 360, 200);
+          const pixel = ctx.getImageData(10, 10, 1, 1).data;
+          return (pixel[0] + pixel[1] + pixel[2]) / 3;
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      });
+    const openBrightness = await brightness();
+    await page.getByRole("button", { name: "Choose f/8", exact: true }).click();
+    expect(await brightness()).toBeLessThan(openBrightness / 2);
+    await page.getByLabel("Keep image brightness", { exact: true }).check();
+    const compensated = await brightness();
+    await page
+      .getByRole("button", { name: "Choose f/1.4", exact: true })
+      .click();
+    expect(await brightness()).toBeCloseTo(compensated, 0);
+    const fit = await page
+      .locator(".diagram-a")
+      .evaluate(
+        (e) => e.scrollHeight <= e.clientHeight + 1 && e.scrollTop === 0,
+      );
+    expect(fit, `aperture view at ${width} x ${height}`).toBe(true);
+    const iris = (await page.locator(".iris-feature").boundingBox())!;
+    const preview = (await page
+      .locator(".aperture-image-panel")
+      .boundingBox())!;
+    expect(iris.x + iris.width).toBeLessThan(preview.x);
+    await page.getByRole("button", { name: "Compare", exact: true }).click();
+    expect(
+      await page
+        .locator(".diagram-a, .diagram-b")
+        .evaluateAll((panels) =>
+          panels.every((panel) => panel.scrollHeight <= panel.clientHeight + 1),
+        ),
+      `comparison aperture view at ${width} x ${height}`,
+    ).toBe(true);
+    await expect(page.locator(".aperture-image")).toHaveCount(2);
+    await page.getByText("Compare all results", { exact: true }).click();
+    await expect(
+      page.getByRole("table", { name: "Configuration comparison" }),
+    ).toBeVisible();
+    const table = (await page.locator(".comparison-table").boundingBox())!;
+    expect(table.y).toBeGreaterThan(0);
+    expect(table.y + table.height).toBeLessThan(height);
+  }
 });

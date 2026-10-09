@@ -3,17 +3,88 @@ import {
   AlertTriangle,
   Activity,
   MoveHorizontal,
+  Camera,
 } from "lucide-react";
 import { calculate, display, type Configuration } from "../lib/optics";
 import { Card } from "./ui/card";
 export function ResultsPanel({
   config: c,
   name,
+  cameraOnly = false,
 }: {
   config: Configuration;
   name: string;
+  cameraOnly?: boolean;
 }) {
   const r = calculate(c);
+  if (cameraOnly)
+    return (
+      <aside
+        className="results"
+        aria-label={`Configuration ${name} camera-only results`}
+      >
+        <Card className="result-card">
+          <div className="card-heading">
+            <Camera size={17} />
+            <h2>Camera only</h2>
+          </div>
+          <p className="eyebrow">SENSOR · {name}</p>
+          <div className="scene-dimensions">
+            <strong>
+              {display(c.width)} × {display(c.height)}
+            </strong>
+            <span>active width × height · mm</span>
+          </div>
+          <dl className="spec-list">
+            <div>
+              <dt>Format</dt>
+              <dd>{c.sensor}</dd>
+            </div>
+            <div>
+              <dt>Sensor diagonal</dt>
+              <dd>{display(r.sensorDiagonal)} mm</dd>
+            </div>
+            <div>
+              <dt>Active area</dt>
+              <dd>{display(c.width * c.height)} mm²</dd>
+            </div>
+            <div>
+              <dt>Aspect ratio</dt>
+              <dd>{display(r.aspect)}:1</dd>
+            </div>
+          </dl>
+        </Card>
+        <Card className="result-card">
+          <div className="card-heading">
+            <h2>Sensor pixels</h2>
+          </div>
+          <div className="scene-dimensions">
+            <strong>
+              {c.pixelsX} × {c.pixelsY}
+            </strong>
+            <span>
+              {c.physicalPixels ? "physical pixel array" : "output resolution"}
+            </span>
+          </div>
+          <dl className="spec-list">
+            <div>
+              <dt>Physical pixel pitch</dt>
+              <dd>
+                {r.pitchX === null
+                  ? "N/A · output resolution"
+                  : `${display(r.pitchX)} × ${display(r.pitchY!)} µm`}
+              </dd>
+            </div>
+          </dl>
+        </Card>
+        <Card className="model-note">
+          <p>
+            Combine the camera and lens to see field of view, image-circle
+            coverage and scene measurements.
+          </p>
+        </Card>
+      </aside>
+    );
   return (
     <aside className="results" aria-label={`Configuration ${name} results`}>
       <Card className="result-card">

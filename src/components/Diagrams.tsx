@@ -30,7 +30,7 @@ export const MODES: {
     label: "Aperture",
     title: "See what a stop of light looks like.",
     description:
-      "The iris is a stylised blade mechanism. Opening sizes represent the entrance pupil at a fixed focal length. Smaller f-numbers admit more light under equal exposure and transmission. F-number is not T-stop.",
+      "The iris is a stylised blade mechanism. Opening sizes represent the entrance pupil at a fixed focal length. Smaller f-numbers admit more light under equal exposure and transmission. The illustrative image holds shutter speed and ISO fixed relative to f/2.8; Keep image brightness compensates exposure. The subject is at the focus distance and the background at twice that distance. Background blur uses a thin-lens approximation. F-number is not T-stop.",
     equation:
       "Entrance pupil diameter = f / N. Geometric area = π(f / 2N)². Relative irradiance ∝ 1 / N²; it is independent of focal length at fixed N in this model.",
   },
@@ -155,6 +155,7 @@ function Board({ children, title }: { children: ReactNode; title: string }) {
   return (
     <svg
       className="optical-svg"
+      fontFamily="inherit"
       viewBox="0 0 640 400"
       role="img"
       aria-label={title}
@@ -187,6 +188,7 @@ function Text({
   children,
   color = "#64748b",
   size = 12,
+  minimumSize = 18,
   anchor = "middle",
 }: {
   x: number;
@@ -194,6 +196,7 @@ function Text({
   children: ReactNode;
   color?: string;
   size?: number;
+  minimumSize?: number;
   anchor?: "middle" | "start" | "end";
 }) {
   return (
@@ -201,9 +204,9 @@ function Text({
       x={x}
       y={y}
       fill={color}
-      fontSize={Math.max(18, size)}
+      fontSize={Math.max(minimumSize, size)}
       textAnchor={anchor}
-      fontFamily="Arial, sans-serif"
+      fontFamily="inherit"
     >
       {children}
     </text>
@@ -212,35 +215,41 @@ function Text({
 export function CoverageDiagram({
   config: c,
   overlays = [],
+  lensAttached = true,
 }: {
   config: Configuration;
   overlays?: string[];
+  lensAttached?: boolean;
 }) {
   const id = useId().replaceAll(":", "");
   const scale =
-    290 /
+    260 /
     Math.max(
-      44,
-      c.circle,
+      lensAttached ? 44 : 0,
+      lensAttached ? c.circle : 0,
       c.width,
       c.height,
-      ...SENSORS.filter((s) => overlays.includes(s.name)).map((s) =>
-        Math.hypot(s.width, s.height),
+      ...SENSORS.filter((sensor) => overlays.includes(sensor.name)).map(
+        (sensor) => Math.hypot(sensor.width, sensor.height),
       ),
     );
   const w = c.width * scale,
     h = c.height * scale,
-    radius = (c.circle * scale) / 2,
-    x = 320 - w / 2,
+    radius = (c.circle * scale) / 2;
+  const x = 245 - w / 2,
     y = 195 - h / 2;
   const r = calculate(c);
   return (
     <Board
-      title={`Sensor ${display(c.width)} by ${display(c.height)} mm inside ${display(c.circle)} mm image circle; ${r.coverageStatus}`}
+      title={
+        lensAttached
+          ? `Sensor ${display(c.width)} by ${display(c.height)} mm inside ${display(c.circle)} mm image circle; ${r.coverageStatus}`
+          : `Camera-only sensor ${display(c.width)} by ${display(c.height)} mm`
+      }
     >
       <defs>
         <clipPath id={`circle-${id}`}>
-          <circle cx="320" cy="195" r={radius} />
+          <circle cx="245" cy="195" r={radius} />
         </clipPath>
         <pattern
           id={`hatch-${id}`}
@@ -254,64 +263,82 @@ export function CoverageDiagram({
         </pattern>
       </defs>
       <line
-        x1="90"
+        x1="100"
         y1="195"
-        x2="550"
+        x2="400"
         y2="195"
         stroke="#b7c5d9"
         strokeDasharray="4 5"
       />
       <line
-        x1="320"
-        y1="30"
-        x2="320"
-        y2="360"
+        x1="245"
+        y1="52"
+        x2="245"
+        y2="335"
         stroke="#b7c5d9"
         strokeDasharray="4 5"
       />
-      <circle
-        cx="320"
-        cy="195"
-        r={radius}
-        fill="#dceafb"
-        fillOpacity="0.45"
-        stroke="#4e8cec"
-        strokeWidth="2"
-      />
-      {SENSORS.filter((s) => overlays.includes(s.name)).map((s, i) => (
-        <g key={s.name}>
-          <rect
-            x={320 - (s.width * scale) / 2}
-            y={195 - (s.height * scale) / 2}
-            width={s.width * scale}
-            height={s.height * scale}
-            fill="none"
-            stroke={
-              ["#a078c3", "#d6a342", "#18a2a6", "#6e8bad", "#d4779b"][i % 5]
-            }
-            strokeDasharray="5 3"
-            strokeWidth="1.2"
-          />
-          <Text
-            x={320 + (s.width * scale) / 2 + 5}
-            y={195 - (s.height * scale) / 2 + 10}
-            anchor="start"
-            size={10}
-          >
-            {s.name}
-          </Text>
-        </g>
-      ))}
-      <rect x={x} y={y} width={w} height={h} fill={`url(#hatch-${id})`} />
+      {lensAttached && (
+        <circle
+          data-testid="lens-image-circle"
+          cx="245"
+          cy="195"
+          r={radius}
+          fill="#dceafb"
+          fillOpacity="0.45"
+          stroke="#4e8cec"
+          strokeWidth="2"
+        />
+      )}
+      {SENSORS.filter((sensor) => overlays.includes(sensor.name)).map(
+        (sensor, i) => (
+          <g key={sensor.name}>
+            <rect
+              x={245 - (sensor.width * scale) / 2}
+              y={195 - (sensor.height * scale) / 2}
+              width={sensor.width * scale}
+              height={sensor.height * scale}
+              fill="none"
+              stroke={
+                ["#a078c3", "#d6a342", "#18a2a6", "#6e8bad", "#d4779b"][i % 5]
+              }
+              strokeDasharray="5 3"
+              strokeWidth="1.2"
+            />
+            <rect
+              x="430"
+              y={257 + i * 22}
+              width="10"
+              height="10"
+              fill={
+                ["#a078c3", "#d6a342", "#18a2a6", "#6e8bad", "#d4779b"][i % 5]
+              }
+            />
+            <Text x={449} y={268 + i * 22} anchor="start">
+              {sensor.name}
+            </Text>
+          </g>
+        ),
+      )}
       <rect
         x={x}
         y={y}
         width={w}
         height={h}
-        fill="#cce3f8"
-        clipPath={`url(#circle-${id})`}
+        fill={lensAttached ? `url(#hatch-${id})` : "#cce3f8"}
       />
+      {lensAttached && (
+        <rect
+          x={x}
+          y={y}
+          width={w}
+          height={h}
+          fill="#cce3f8"
+          clipPath={`url(#circle-${id})`}
+        />
+      )}
       <rect
+        data-testid="camera-sensor"
         x={x}
         y={y}
         width={w}
@@ -329,40 +356,64 @@ export function CoverageDiagram({
         strokeWidth="1"
         strokeDasharray="5 4"
       />
-      <rect
-        x="220"
-        y="170"
-        width="200"
-        height="50"
-        rx="6"
-        fill="#f8fbff"
-        fillOpacity="0.9"
-      />
-      <Text x={320} y={190} color="#1761a7" size={18}>
-        {c.sensor}
-      </Text>
-      <Text x={320} y={212} size={16}>
-        {display(c.width * c.height)} mm² active area
-      </Text>
       <path
-        d={`M ${x} ${y + h + 9} v 7 M ${x} ${y + h + 13} H ${x + w} M ${x + w} ${y + h + 9} v 7`}
+        d={`M ${x + w} 195 H 413 V 180 H 430`}
+        fill="none"
+        stroke="#4c83b8"
+        strokeWidth="1.2"
+      />
+      <g data-testid="sensor-callout">
+        <rect
+          x="430"
+          y="130"
+          width="190"
+          height="113"
+          rx="10"
+          fill="#fff"
+          stroke="#cadced"
+        />
+        <Text x={525} y={160} color="#1761a7" size={18}>
+          {c.sensor}
+        </Text>
+        <Text x={525} y={195} color="#1761a7" size={20}>
+          {display(c.width * c.height)} mm²
+        </Text>
+        <Text x={525} y={223}>
+          active sensor area
+        </Text>
+      </g>
+      <path
+        d={`M ${x} ${y + h + 5} V 350 M ${x + w} ${y + h + 5} V 350 M ${x} 345 v 10 M ${x} 350 H ${x + w} M ${x + w} 345 v 10`}
         fill="none"
         stroke="#64748b"
       />
-      <Text x={320} y={y + h + 31}>
-        {display(c.width)} mm
+      <g data-testid="sensor-width-label">
+        <Text x={245} y={373}>
+          {display(c.width)} mm wide
+        </Text>
+      </g>
+      <path
+        d={`M 82 ${y} H ${x - 5} M 82 ${y + h} H ${x - 5} M 77 ${y} h 10 M 82 ${y} V ${y + h} M 77 ${y + h} h 10`}
+        fill="none"
+        stroke="#64748b"
+      />
+      <g data-testid="sensor-height-label">
+        <Text x={72} y={195} anchor="end">
+          {display(c.height)} mm
+        </Text>
+      </g>
+      <Text x={320} y={30} color="#326eaf" size={18}>
+        {lensAttached
+          ? `LENS IMAGE CIRCLE · Ø ${display(c.circle)} mm`
+          : "CAMERA SENSOR · camera-only view"}
       </Text>
-      <Text x={x - 11} y={195} anchor="end">
-        {display(c.height)} mm
+      <Text x={320} y={393}>
+        Diagonal {display(r.sensorDiagonal)} mm
+        {lensAttached
+          ? ` · ${display(r.coverage * 100, 1)}% area coverage`
+          : ""}
       </Text>
-      <Text x={320} y={36} color="#326eaf" size={12}>
-        LENS IMAGE CIRCLE · Ø {display(c.circle)} mm
-      </Text>
-      <Text x={320} y={378}>
-        Diagonal {display(r.sensorDiagonal)} mm · {display(r.coverage * 100, 1)}
-        % area coverage
-      </Text>
-      <circle cx="320" cy="195" r="2.5" fill="#1469e8" />
+      <circle cx="245" cy="195" r="2.5" fill="#1469e8" />
     </Board>
   );
 }
@@ -430,18 +481,149 @@ export function ApertureDiagram({
   choose: (n: number) => void;
 }) {
   const r = calculate(c);
+  const id = useId().replaceAll(":", "");
+  const [compensated, setCompensated] = useState(false);
+  const lightRatio = (2.8 / c.aperture) ** 2;
+  const stops = Math.log2(lightRatio);
+  // Thin-lens defocus circle for a background at twice the focus distance.
+  const focus = c.focusM * 1000;
+  const background = focus * 2;
+  const blurMm =
+    (c.focal ** 2 * Math.abs(background - focus)) /
+    (c.aperture * background * (focus - c.focal));
+  const blur = Math.min(10, ((blurMm / c.width) * 360) / 2);
   return (
     <div className="aperture-view">
-      <div className="iris-feature">
-        <Iris aperture={c.aperture} blades={blades} size={210} />
-        <div>
-          <span className="eyebrow">ENTRANCE PUPIL</span>
-          <strong>f/{display(c.aperture)}</strong>
-          <p>{display(r.apertureDiameter)} mm effective diameter</p>
-          <p>{display(r.apertureArea)} mm² geometric area</p>
-          <span className="pill">
-            {display(r.relativeLight * 100)}% light vs f/1
-          </span>
+      <div className="aperture-demonstration">
+        <div className="iris-feature">
+          <div className="iris-opening">
+            <Iris aperture={c.aperture} blades={blades} size={210} />
+            <div>
+              <span className="eyebrow">ENTRANCE PUPIL</span>
+              <strong>f/{display(c.aperture)}</strong>
+            </div>
+          </div>
+          <div className="iris-metrics">
+            <p>
+              {display(r.apertureDiameter)} mm{" "}
+              <span className="metric-description">effective diameter</span>
+            </p>
+            <p>{display(r.apertureArea)} mm² geometric area</p>
+            <span className="pill">
+              {display(r.relativeLight * 100)}% light vs f/1
+            </span>
+          </div>
+        </div>
+        <div className="aperture-image-panel">
+          <div className="aperture-preview-heading">
+            <strong>Effect on the image</strong>
+            <span>Illustrative preview</span>
+          </div>
+          <svg
+            className="aperture-image"
+            viewBox="0 0 360 200"
+            role="img"
+            aria-label={`Aperture image preview at f/${display(c.aperture)}; ${compensated ? "brightness compensated" : `${display(lightRatio * 100, 1)} percent light relative to f/2.8`}`}
+            fontFamily="inherit"
+          >
+            <defs>
+              <filter
+                id={`defocus-${id}`}
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
+                <feGaussianBlur stdDeviation={blur} />
+              </filter>
+              <filter
+                id={`exposure-${id}`}
+                colorInterpolationFilters="linearRGB"
+              >
+                <feComponentTransfer>
+                  <feFuncR type="linear" slope={compensated ? 1 : lightRatio} />
+                  <feFuncG type="linear" slope={compensated ? 1 : lightRatio} />
+                  <feFuncB type="linear" slope={compensated ? 1 : lightRatio} />
+                </feComponentTransfer>
+              </filter>
+            </defs>
+            <g filter={`url(#exposure-${id})`}>
+              <rect width="360" height="200" fill="#8faeca" />
+              <g
+                filter={`url(#defocus-${id})`}
+                data-testid="aperture-background"
+              >
+                <circle cx="292" cy="38" r="20" fill="#f5d59a" />
+                <path
+                  d="M0 116 L64 52 L127 116 L194 61 L274 116 L320 74 L360 104 V200 H0Z"
+                  fill="#496f75"
+                />
+                <rect y="128" width="360" height="72" fill="#637d56" />
+                {[20, 47, 74, 101, 128, 235, 262, 289, 316, 343].map((x) => (
+                  <g key={x}>
+                    <rect
+                      x={x}
+                      y="112"
+                      width="9"
+                      height="52"
+                      rx="3"
+                      fill="#e4d5bb"
+                    />
+                    <circle cx={x + 4} cy="88" r="10" fill="#62864b" />
+                  </g>
+                ))}
+                <rect y="136" width="360" height="6" fill="#e4d5bb" />
+                <rect y="155" width="360" height="6" fill="#e4d5bb" />
+              </g>
+              <rect y="175" width="360" height="25" fill="#bd9e7d" />
+              <ellipse cx="178" cy="176" rx="49" ry="7" fill="#856d59" />
+              <path
+                d="M195 117 H211 Q234 117 234 137 Q234 154 210 154 H202"
+                fill="none"
+                stroke="#edbc68"
+                strokeWidth="10"
+              />
+              <path d="M140 110 H207 L201 174 H146Z" fill="#edbc68" />
+              <ellipse cx="173.5" cy="110" rx="33.5" ry="6" fill="#f5d49b" />
+              <ellipse cx="173.5" cy="110" rx="27" ry="3.5" fill="#544339" />
+              <path
+                d="M155 122 V158"
+                stroke="#f7dca9"
+                strokeWidth="5"
+                strokeLinecap="round"
+              />
+            </g>
+          </svg>
+          <div className="aperture-image-stats" aria-live="polite">
+            <span>
+              <b>
+                {stops >= 0 ? "+" : ""}
+                {display(stops, 1)} stops
+              </b>{" "}
+              light vs f/2.8
+            </span>
+            <span>
+              <b>
+                {display(r.dof.nearM)}–{display(r.dof.farM)} m
+              </b>{" "}
+              depth of field
+            </span>
+          </div>
+          <label className="aperture-exposure-toggle">
+            <input
+              type="checkbox"
+              checked={compensated}
+              onChange={(e) => setCompensated(e.target.checked)}
+            />
+            Keep image brightness
+          </label>
+          <p className="aperture-preview-note">
+            {compensated
+              ? "Exposure compensated; background blur still changes."
+              : "Fixed shutter speed and ISO; brightness is relative to f/2.8."}{" "}
+            Subject at {display(c.focusM)} m; background at{" "}
+            {display(c.focusM * 2)} m.
+          </p>
         </div>
       </div>
       <div className="stop-chart">
@@ -855,14 +1037,15 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
         {display(r.sceneWidthM)} m wide
       </Text>
       <path
-        d={`M ${x + width + 8} ${y} h 10 M ${x + width + 13} ${y} V ${y + height} M ${x + width + 8} ${y + height} h 10`}
+        d={`M ${x - 18} ${y} h 10 M ${x - 13} ${y} V ${y + height} M ${x - 18} ${y + height} h 10`}
         stroke="#607d9c"
         fill="none"
       />
       <text
-        x={x + width + 34}
+        data-testid="scene-height-label"
+        x={x - 28}
         y={185}
-        transform={`rotate(-90 ${x + width + 34} 185)`}
+        transform={`rotate(-90 ${x - 28} 185)`}
         textAnchor="middle"
         fontSize="16"
         fill="#526b85"
@@ -870,6 +1053,7 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
         {display(r.sceneHeightM)} m high
       </text>
       <path
+        data-testid="scene-object-leader"
         d={`M ${objectRight} 185 H 440 V 150 H 455`}
         stroke="#2675d3"
         strokeWidth="1.5"
@@ -886,16 +1070,16 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
           fill="#fff"
           stroke="#cadced"
         />
-        <Text x={537} y={138} color="#526b85">
+        <Text x={537} y={138} color="#526b85" size={14} minimumSize={14}>
           OBJECT WIDTH
         </Text>
-        <Text x={537} y={170} color="#1761a7" size={22}>
+        <Text x={537} y={170} color="#1761a7" size={18}>
           {display(c.objectM)} m
         </Text>
-        <Text x={537} y={203} color="#1761a7" size={20}>
+        <Text x={537} y={203} color="#1761a7" size={18}>
           {display(r.objectPixels, 1)} px
         </Text>
-        <Text x={537} y={230}>
+        <Text x={537} y={230} size={14} minimumSize={14}>
           projected width
         </Text>
       </g>

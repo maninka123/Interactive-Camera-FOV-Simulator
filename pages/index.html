@@ -16,7 +16,8 @@
         margin: 0;
         background: #f6f8fb;
         color: #253c56;
-        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       }
       main {
         max-width: 1100px;
@@ -257,9 +258,11 @@
             <img
               src="assets/aperture-view.png"
               loading="lazy"
-              alt="Animated iris and aperture f-stop comparison"
+              alt="Aperture opening alongside an image showing background blur and brightness controls"
             />
-            <figcaption>Interactive aperture and f-stop comparison.</figcaption>
+            <figcaption>
+              Aperture opening, image effects and f-stop comparison.
+            </figcaption>
           </figure>
           <figure>
             <img
@@ -276,14 +279,19 @@
         <ol>
           <li>
             <a href="camera-lens-explorer/">Open the explorer</a>, pick a camera
-            and lens, and edit their specifications. Preset dimensions are
-            representative and editable; custom numeric fields are always
-            available.
+            and lens, and edit their specifications. Sensor presets have fixed,
+            representative dimensions. Select <strong>Custom</strong> to type
+            width and height or drag their sliders. The closest format is an
+            approximate comparison; green and red messages check dimension
+            limits and lens coverage, not whether a sensor product exists.
           </li>
           <li>
             Select <strong>Combine camera + lens</strong> to pair the displayed
-            specifications. Subsequent changes stay live. Choose a diagram tab
-            to explore the geometry. On mobile, controls can collapse.
+            specifications; the button turns green. Use
+            <strong>Show camera only</strong> to inspect the sensor separately,
+            or click the combined button again to decouple the lens. Choose a
+            diagram tab to explore the geometry. On mobile, controls can
+            collapse.
           </li>
           <li>
             On desktop, use the <strong>Camera</strong>,
@@ -298,6 +306,13 @@
             width on that plane, used to estimate its size in pixels. The
             distance slider changes that plane; it does not move the
             image-preview camera.
+          </li>
+          <li>
+            The <strong>Aperture</strong> view pairs the opening with an
+            illustrative image. Changing the f-number updates brightness and
+            background blur. <strong>Keep image brightness</strong> compensates
+            exposure so you can compare blur; shutter speed and ISO are
+            otherwise held fixed, with f/2.8 as the brightness reference.
           </li>
           <li>
             Select <strong>Compare</strong> to edit A and B independently and

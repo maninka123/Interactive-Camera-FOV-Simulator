@@ -4,7 +4,13 @@ import {
   isConfiguration,
   type Configuration,
 } from "./optics";
-export type Session = { a: Configuration; b: Configuration; compare: boolean };
+export type Session = {
+  a: Configuration;
+  b: Configuration;
+  compare: boolean;
+  combined?: { A: boolean; B: boolean };
+  cameraOnly?: { A: boolean; B: boolean };
+};
 export function readSession(search: string): Session {
   const fallback = {
     a: { ...DEFAULT },
@@ -15,12 +21,29 @@ export function readSession(search: string): Session {
     const raw = new URLSearchParams(search).get("config");
     if (!raw || raw.length > 5000) return fallback;
     const data = JSON.parse(raw);
-    return data.version === 1 &&
-      isConfiguration(data.a) &&
-      isConfiguration(data.b) &&
-      typeof data.compare === "boolean"
-      ? data
-      : fallback;
+    if (
+      data.version !== 1 ||
+      !isConfiguration(data.a) ||
+      !isConfiguration(data.b) ||
+      typeof data.compare !== "boolean"
+    )
+      return fallback;
+    const validStates = (value: unknown): value is { A: boolean; B: boolean } =>
+      typeof value === "object" &&
+      value !== null &&
+      typeof (value as { A?: unknown }).A === "boolean" &&
+      typeof (value as { B?: unknown }).B === "boolean";
+    return {
+      a: data.a,
+      b: data.b,
+      compare: data.compare,
+      combined: validStates(data.combined)
+        ? data.combined
+        : { A: false, B: false },
+      cameraOnly: validStates(data.cameraOnly)
+        ? data.cameraOnly
+        : { A: false, B: false },
+    };
   } catch {
     return fallback;
   }
@@ -109,10 +132,9 @@ export function download(filename: string, data: BlobPart, type: string) {
 export function downloadDiagram(svg: SVGSVGElement) {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  clone.setAttribute(
-    "style",
-    "font-family:Arial,sans-serif;background:#f8fafd;color:#334155",
-  );
+  clone.style.fontFamily = getComputedStyle(svg).fontFamily;
+  clone.style.background = "#f8fafd";
+  clone.style.color = "#334155";
   download(
     "optical-diagram.svg",
     new XMLSerializer().serializeToString(clone),

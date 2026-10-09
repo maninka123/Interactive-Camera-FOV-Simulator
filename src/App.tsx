@@ -120,8 +120,13 @@ export default function App() {
     [b, setB] = useState(initial.b),
     [compare, setCompare] = useState(initial.compare);
   const [editing, setEditing] = useState<"A" | "B">("A"),
-    [mode, setMode] = useState<Mode>("coverage"),
-    [combined, setCombined] = useState(false);
+    [mode, setMode] = useState<Mode>("coverage");
+  const [combined, setCombined] = useState(
+    initial.combined ?? { A: false, B: false },
+  );
+  const [cameraOnly, setCameraOnly] = useState(
+    initial.cameraOnly ?? { A: false, B: false },
+  );
   const [overlays, setOverlays] = useState<string[]>([]),
     [blades, setBlades] = useState(8),
     [axis, setAxis] = useState<"horizontal" | "vertical">("horizontal"),
@@ -151,8 +156,17 @@ export default function App() {
     bb = useAnimatedConfig(b, direct);
   const active = editing === "A" ? a : b,
     setActive = editing === "A" ? setA : setB;
-  const session = { a, b, compare },
-    info = MODES.find((m) => m.id === mode)!;
+  const session = { a, b, compare, combined, cameraOnly },
+    info = cameraOnly[editing]
+      ? {
+          ...MODES[0],
+          title: "The camera sensor on its own.",
+          description:
+            "Inspect the active sensor dimensions and pixel array before adding the lens. A sensor alone does not determine field of view or scene coverage.",
+          equation:
+            "Sensor diagonal = √(width² + height²). Physical pixel pitch = sensor dimension / physical pixel count.",
+        }
+      : MODES.find((m) => m.id === mode)!;
   const toast = (message: string) => {
     setNotice(message);
     if (timer.current) clearTimeout(timer.current);
@@ -168,6 +182,14 @@ export default function App() {
     }
   };
   const view = (config: Configuration, name: "A" | "B") => {
+    if (cameraOnly[name])
+      return (
+        <CoverageDiagram
+          config={config}
+          overlays={overlays}
+          lensAttached={false}
+        />
+      );
     switch (mode) {
       case "coverage":
         return <CoverageDiagram config={config} overlays={overlays} />;
@@ -222,6 +244,7 @@ export default function App() {
             onClick={() => {
               setCompare((v) => !v);
               setEditing("A");
+              if (cameraOnly.A) setMode("coverage");
             }}
           >
             <GitCompareArrows size={16} />
@@ -278,13 +301,19 @@ export default function App() {
             >
               <Button
                 variant={editing === "A" ? "default" : "ghost"}
-                onClick={() => setEditing("A")}
+                onClick={() => {
+                  setEditing("A");
+                  if (cameraOnly.A) setMode("coverage");
+                }}
               >
                 Edit A
               </Button>
               <Button
                 variant={editing === "B" ? "default" : "ghost"}
-                onClick={() => setEditing("B")}
+                onClick={() => {
+                  setEditing("B");
+                  if (cameraOnly.B) setMode("coverage");
+                }}
               >
                 Edit B
               </Button>
@@ -295,6 +324,8 @@ export default function App() {
               size="sm"
               onClick={() => {
                 setB({ ...a });
+                setCombined((states) => ({ ...states, B: states.A }));
+                setCameraOnly((states) => ({ ...states, B: states.A }));
                 toast("Configuration A copied to B");
               }}
             >
@@ -308,6 +339,8 @@ export default function App() {
                 setA({ ...DEFAULT });
                 setB({ ...DEFAULT, focal: 50 });
                 setEditing("A");
+                setCombined({ A: false, B: false });
+                setCameraOnly({ A: false, B: false });
               }}
             >
               Reset comparison
@@ -320,8 +353,9 @@ export default function App() {
               {active.sensor} · {active.focal} mm
             </strong>
             <span>
-              f/{active.aperture} · {display(calculate(active).horizontal, 1)}°
-              horizontal
+              {cameraOnly[editing]
+                ? `${display(active.width)} × ${display(active.height)} mm · camera only`
+                : `f/${active.aperture} · ${display(calculate(active).horizontal, 1)}° horizontal`}
             </span>
           </div>
           <Button
@@ -359,15 +393,25 @@ export default function App() {
               change={setActive}
               reset={() => {
                 setActive({ ...DEFAULT });
-                setCombined(false);
+                setCombined((states) => ({ ...states, [editing]: false }));
+                setCameraOnly((states) => ({ ...states, [editing]: false }));
               }}
-              combined={combined}
+              combined={combined[editing]}
+              cameraOnly={cameraOnly[editing]}
+              changeCameraOnly={(only) => {
+                setCameraOnly((states) => ({ ...states, [editing]: only }));
+                setMode("coverage");
+              }}
               combine={() => {
-                setCombined(true);
+                const next = !combined[editing];
+                setCombined((states) => ({ ...states, [editing]: next }));
+                setCameraOnly((states) => ({ ...states, [editing]: !next }));
+                setMode("coverage");
                 toast(
-                  `Configuration ${editing} paired. All settings remain live.`,
+                  next
+                    ? `Configuration ${editing}: camera and lens combined.`
+                    : `Configuration ${editing}: lens decoupled. Showing the camera sensor.`,
                 );
-                board.current?.focus();
               }}
             />
           </div>
@@ -378,7 +422,7 @@ export default function App() {
                   <span className="eyebrow">THE OPTICAL WORKBENCH</span>
                   <h2>
                     {compare
-                      ? "Two configurations. One experiment."
+                      ? "Compare configurations."
                       : "See the relationship."}
                   </h2>
                 </div>
@@ -415,6 +459,8 @@ export default function App() {
                       size="sm"
                       onClick={() => {
                         setA({ ...DEFAULT, focal: 16, aperture: 4 });
+                        setCombined((states) => ({ ...states, A: true }));
+                        setCameraOnly((states) => ({ ...states, A: false }));
                         setMode("preview");
                         toast("Wide-angle lens: see more of the same scene.");
                       }}
@@ -426,6 +472,8 @@ export default function App() {
                       size="sm"
                       onClick={() => {
                         setA({ ...DEFAULT, circle: 29 });
+                        setCombined((states) => ({ ...states, A: true }));
+                        setCameraOnly((states) => ({ ...states, A: false }));
                         setMode("coverage");
                         toast(
                           "Smaller image circle: inspect the uncovered sensor corners.",
@@ -445,6 +493,8 @@ export default function App() {
                           focusM: 3,
                         });
                         setMode("dof");
+                        setCombined((states) => ({ ...states, A: true }));
+                        setCameraOnly((states) => ({ ...states, A: false }));
                         toast(
                           "Portrait example: see the smaller acceptable-sharpness region.",
                         );
@@ -468,10 +518,12 @@ export default function App() {
                       id={`tab-${m.id}`}
                       role="tab"
                       aria-selected={mode === m.id}
+                      disabled={cameraOnly[editing] && m.id !== "coverage"}
                       aria-controls="diagram-panel"
                       tabIndex={mode === m.id ? 0 : -1}
                       onClick={() => setMode(m.id)}
                       onKeyDown={(e) => {
+                        if (cameraOnly[editing]) return;
                         const delta =
                           e.key === "ArrowRight"
                             ? 1
@@ -644,14 +696,6 @@ export default function App() {
                 </details>
               </div>
             </Card>
-            {compare && (
-              <Card className="comparison-card">
-                <details className="comparison-details">
-                  <summary>Compare all results</summary>
-                  <ComparisonTable a={a} b={b} />
-                </details>
-              </Card>
-            )}
             <Card className="export-card">
               <div>
                 <ArrowDownToLine size={19} />
@@ -661,9 +705,16 @@ export default function App() {
                 </div>
               </div>
               <div className="export-actions">
+                {compare && !cameraOnly.A && !cameraOnly.B && (
+                  <details className="comparison-details">
+                    <summary>Compare all results</summary>
+                    <ComparisonTable a={a} b={b} />
+                  </details>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={cameraOnly.A || (compare && cameraOnly.B)}
                   onClick={() =>
                     copy(
                       toJson(exportResults(session)),
@@ -676,6 +727,7 @@ export default function App() {
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={cameraOnly.A || (compare && cameraOnly.B)}
                   onClick={() =>
                     download(
                       "optical-results.json",
@@ -689,6 +741,7 @@ export default function App() {
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={cameraOnly.A || (compare && cameraOnly.B)}
                   onClick={() =>
                     download("optical-results.csv", toCsv(session), "text/csv")
                   }
@@ -726,7 +779,11 @@ export default function App() {
               </Card>
             )}
           </div>
-          <ResultsPanel name={editing} config={active} />
+          <ResultsPanel
+            name={editing}
+            config={active}
+            cameraOnly={cameraOnly[editing]}
+          />
         </div>
       </main>
       <footer className="app-footer">

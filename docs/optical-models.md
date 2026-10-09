@@ -1,6 +1,6 @@
 # Models, units and preset sources
 
-All views use `src/lib/optics.ts`. Sensor dimensions, focal length, image circle, entrance pupil and circle of confusion are in **mm**. Target/focus distances and object widths are in **m**. Displayed angles are in **degrees**; pixel pitches use **µm**.
+All reported optical results use `src/lib/optics.ts`. Sensor dimensions, focal length, image circle, entrance pupil and circle of confusion are in **mm**. Target/focus distances and object widths are in **m**. Displayed angles are in **degrees**; pixel pitches use **µm**.
 
 ## Nominal field of view
 
@@ -20,6 +20,10 @@ Status labels are geometric: **fully covered** when diameter reaches the sensor 
 
 Entrance pupil diameter is `f/N`, area is `π(f/(2N))²`, and relative irradiance versus f/1 is `1/N²` under equal exposure and transmission. Ratios between f-numbers use their inverse squares. Rounded full-stop labels are approximate. The illustrated iris uses a regular polygon; it is not a mechanical simulation, and its area does not replace the circular entrance-pupil calculation. F-number is geometric; T-stop includes transmission losses. No aperture change modifies nominal FOV.
 
+The aperture view includes a separate illustrative image. With shutter speed and ISO fixed, RGB intensities are scaled in linear colour space by `(2.8/N)²` relative to f/2.8. Highlights can clip; this is not a camera response or metering simulation. **Keep image brightness** fixes that multiplier to one, while background blur continues to change.
+
+The subject lies at focus distance `s`, and the background at `z = 2s`. Its thin-lens defocus circle diameter on the sensor is `b = f² |z − s| / [N z (s − f)]`, using mm throughout. A Gaussian approximation uses standard deviation `b × 360 / sensorWidth / 2` in the illustration, capped at 10 drawing units. This demonstrates aperture-dependent blur; it does not model a lens point-spread function, diffraction, or bokeh. The main **Image preview** tab remains a separate pinhole framing demonstration without exposure or blur simulation.
+
 ## Pixel sampling
 
 Physical pitch is `1000 × sensor dimension / physical pixel count`. For scaled output resolution, physical pitch is unavailable. Mean angular sampling is `FOV / pixel count`; central angular sampling is `2 atan(sensor width/(2f × horizontal pixels))`. These differ because rectilinear angular sampling is nonuniform.
@@ -36,7 +40,7 @@ Every scene vertex projects as `x = fX/Z`, `y = f(Y−1.6)/Z`, with a fixed came
 
 ## Sensor presets
 
-Inch names are optical-format labels, never literal physical dimensions. Active dimensions vary with manufacturer, pixel array and crop. The presets are representative and may be overridden; resolution values are editable examples rather than guaranteed specifications for a format. Some example arrays imply slightly nonsquare pixels, which is why horizontal and vertical pitches are shown separately.
+Inch names are optical-format labels, never literal physical dimensions. Active dimensions vary with manufacturer, pixel array and crop. Preset dimensions are fixed while a preset is selected; choose **Custom** to edit them with numeric fields or sliders. Custom dimensions display a matching preset within 0.02 mm, or the closest representative format using relative width and height differences. That estimate does not establish an optical-format designation or product availability. Green/red checks report the supported dimension range and whether the selected image circle covers the sensor. Resolution values are editable examples rather than guaranteed specifications for a format. Some example arrays imply slightly nonsquare pixels, which is why horizontal and vertical pitches are shown separately.
 
 | Format            | Active width × height (mm) | Reference                                                                                                                                           |
 | ----------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
