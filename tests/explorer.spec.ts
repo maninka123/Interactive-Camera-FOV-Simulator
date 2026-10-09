@@ -535,6 +535,10 @@ test("aperture preview shows exposure changes, can compensate brightness and fit
       .boundingBox())!;
     expect(iris.x + iris.width).toBeLessThan(preview.x);
     await page.getByRole("button", { name: "Compare", exact: true }).click();
+    // Compare changes the available width; wait for ResizeObserver and layout.
+    await page.evaluate(() => new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    ));
     expect(
       await page
         .locator(".diagram-a, .diagram-b")

@@ -1436,6 +1436,10 @@ input[type="checkbox"] {
     max-height: 100px;
     max-width: 180px;
   }
+  .split .aperture-preview-heading,
+  .split .iris-opening .eyebrow {
+    display: none;
+  }
   .split .aperture-image-stats {
     display: block;
     margin: 4px 0;
