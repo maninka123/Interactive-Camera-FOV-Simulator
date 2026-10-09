@@ -201,7 +201,7 @@ function Text({
       x={x}
       y={y}
       fill={color}
-      fontSize={size}
+      fontSize={Math.max(18, size)}
       textAnchor={anchor}
       fontFamily="Arial, sans-serif"
     >
@@ -330,18 +330,18 @@ export function CoverageDiagram({
         strokeDasharray="5 4"
       />
       <rect
-        x="264"
-        y="176"
-        width="112"
-        height="38"
+        x="220"
+        y="170"
+        width="200"
+        height="50"
         rx="6"
         fill="#f8fbff"
         fillOpacity="0.9"
       />
-      <Text x={320} y={192} color="#1761a7" size={13}>
+      <Text x={320} y={190} color="#1761a7" size={18}>
         {c.sensor}
       </Text>
-      <Text x={320} y={207} size={10}>
+      <Text x={320} y={212} size={16}>
         {display(c.width * c.height)} mm² active area
       </Text>
       <path
@@ -484,7 +484,9 @@ export function RayDiagram({
     lensX = 235,
     sensorX = lensX - c.focal * scale,
     half = (d * scale) / 2;
-  const targetX = 550,
+  // Shorten the illustrated target distance for wide angles so both boundary
+  // rays remain inside the board, preserving their sensor/focal slope.
+  const targetX = lensX + Math.min(315, (260 * c.focal) / d),
     targetHalf = ((targetX - lensX) * d) / (2 * c.focal);
   return (
     <Board title={`${axis} pinhole field-of-view boundary rays`}>
@@ -550,19 +552,19 @@ export function RayDiagram({
         stroke="#789dc4"
       />
       <circle cx={lensX} cy="200" r="4" fill="#166bd7" />
-      <Text x={sensorX} y={95}>
+      <Text x={100} y={65}>
         Sensor
       </Text>
-      <Text x={sensorX} y={112}>
+      <Text x={100} y={86}>
         {display(d)} mm
       </Text>
-      <Text x={lensX} y={104}>
+      <Text x={lensX} y={43}>
         Optical centre
       </Text>
-      <Text x={targetX} y={65}>
+      <Text x={490} y={43}>
         Target plane
       </Text>
-      <Text x={targetX} y={83}>
+      <Text x={490} y={64}>
         {display(c.distanceM)} m
       </Text>
       <path
@@ -573,17 +575,16 @@ export function RayDiagram({
       <Text x={(sensorX + lensX) / 2} y={316}>
         f = {display(c.focal)} mm
       </Text>
-      <Text x={400} y={294} color="#166bd7">
+      <Text x={430} y={351} color="#166bd7">
         {display(axis === "horizontal" ? r.horizontal : r.vertical, 1)}° {axis}{" "}
         FOV
       </Text>
-      <Text x={400} y={313}>
+      <Text x={430} y={373}>
         Scene {display(axis === "horizontal" ? r.sceneWidthM : r.sceneHeightM)}{" "}
         m
       </Text>
-      <Text x={320} y={378}>
-        Sensor side to scale · target side uses a separate distance scale; rays
-        may exceed the drawing
+      <Text x={320} y={392}>
+        Drawing distance adapts to fit · sensor/focal ratio is preserved
       </Text>
     </Board>
   );
@@ -788,12 +789,13 @@ export function PreviewDiagram({
 }
 export function DistanceDiagram({ config: c }: { config: Configuration }) {
   const r = calculate(c),
-    width = Math.min(420, (240 * c.width) / c.height),
+    width = Math.min(350, (210 * c.width) / c.height),
     height = (width * c.height) / c.width,
-    x = 320 - width / 2,
-    y = 195 - height / 2,
+    x = 220 - width / 2,
+    y = 185 - height / 2,
     object = (width * c.objectM) / r.sceneWidthM;
   const id = useId().replaceAll(":", "");
+  const objectRight = Math.min(x + width, 220 + object / 2);
   return (
     <Board
       title={`Scene coverage ${display(r.sceneWidthM)} by ${display(r.sceneHeightM)} metres`}
@@ -803,6 +805,9 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
           <rect x={x} y={y} width={width} height={height} />
         </clipPath>
       </defs>
+      <Text x={320} y={30} color="#226bb5" size={18}>
+        TARGET PLANE · {display(c.distanceM)} m from camera
+      </Text>
       <rect
         x={x}
         y={y}
@@ -820,45 +825,91 @@ export function DistanceDiagram({ config: c }: { config: Configuration }) {
               x2={x + (width * (i + 1)) / 20}
               y1={y}
               y2={y + height}
-              stroke="#c0d8ed"
+              stroke="#c8deef"
             />
             <line
               x1={x}
               x2={x + width}
               y1={y + (height * (i + 1)) / 20}
               y2={y + (height * (i + 1)) / 20}
-              stroke="#c0d8ed"
+              stroke="#c8deef"
             />
           </g>
         ))}
         <rect
-          x={320 - object / 2}
-          y={195 - height * 0.25}
+          data-testid="scene-object"
+          x={220 - object / 2}
+          y={185 - height * 0.25}
           width={object}
           height={height * 0.5}
           rx="2"
-          fill="#1672df"
-          fillOpacity="0.72"
+          fill="#2675d3"
         />
       </g>
-      <Text x={320} y={37} color="#226bb5">
-        TARGET PLANE · {display(c.distanceM)} m
-      </Text>
-      <Text x={320} y={y - 17}>
+      <path
+        d={`M ${x} ${y + height + 9} v 10 M ${x} ${y + height + 14} H ${x + width} M ${x + width} ${y + height + 9} v 10`}
+        stroke="#607d9c"
+        fill="none"
+      />
+      <Text x={220} y={y + height + 38}>
         {display(r.sceneWidthM)} m wide
       </Text>
-      <Text x={x + width + 9} y={195} anchor="start">
-        {display(r.sceneHeightM)} m
-      </Text>
-      <Text x={320} y={193} color="#fff">
-        {display(c.objectM)} m object
-      </Text>
-      <Text x={320} y={214} color="#fff">
-        {display(r.objectPixels, 1)} px
-      </Text>
-      <Text x={320} y={377}>
+      <path
+        d={`M ${x + width + 8} ${y} h 10 M ${x + width + 13} ${y} V ${y + height} M ${x + width + 8} ${y + height} h 10`}
+        stroke="#607d9c"
+        fill="none"
+      />
+      <text
+        x={x + width + 34}
+        y={185}
+        transform={`rotate(-90 ${x + width + 34} 185)`}
+        textAnchor="middle"
+        fontSize="16"
+        fill="#526b85"
+      >
+        {display(r.sceneHeightM)} m high
+      </text>
+      <path
+        d={`M ${objectRight} 185 H 440 V 150 H 455`}
+        stroke="#2675d3"
+        strokeWidth="1.5"
+        fill="none"
+      />
+      <circle cx={objectRight} cy="185" r="3" fill="#2675d3" />
+      <g data-testid="scene-object-callout">
+        <rect
+          x="455"
+          y="112"
+          width="165"
+          height="140"
+          rx="10"
+          fill="#fff"
+          stroke="#cadced"
+        />
+        <Text x={537} y={138} color="#526b85">
+          OBJECT WIDTH
+        </Text>
+        <Text x={537} y={170} color="#1761a7" size={22}>
+          {display(c.objectM)} m
+        </Text>
+        <Text x={537} y={203} color="#1761a7" size={20}>
+          {display(r.objectPixels, 1)} px
+        </Text>
+        <Text x={537} y={230}>
+          projected width
+        </Text>
+      </g>
+      {c.objectM > r.sceneWidthM && (
+        <Text x={537} y={280} color="#a76a25">
+          Exceeds the frame
+        </Text>
+      )}
+      <Text x={320} y={369}>
         {display(r.samplingX, 1)} px/m horizontal · {display(r.samplingY, 1)}{" "}
-        px/m vertical · grid is illustrative
+        px/m vertical
+      </Text>
+      <Text x={320} y={393}>
+        Grid is illustrative · object lies on the target plane
       </Text>
     </Board>
   );

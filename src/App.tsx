@@ -133,6 +133,14 @@ export default function App() {
     [direct, setDirect] = useState(false);
   const board = useRef<HTMLDivElement>(null),
     timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspace = useRef<HTMLElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const update = () =>
+      setFullscreen(document.fullscreenElement === workspace.current);
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
@@ -238,27 +246,30 @@ export default function App() {
           </a>
         </nav>
       </header>
-      <main>
-        <section className="intro">
-          <div>
-            <p className="eyebrow">
-              <span className="blue-dash" /> AN INTERACTIVE OPTICS LAB
-            </p>
-            <h1>
-              A little change.
-              <br className="mobile-break" /> A different field of view.
-            </h1>
-            <p>
-              Explore how your sensor and lens shape what you see. Change a
-              setting. Watch the geometry respond.
-            </p>
-          </div>
-          <div className="intro-detail">
-            <span>01 — CONFIGURE</span>
-            <span>02 — EXPLORE</span>
-            <span>03 — COMPARE</span>
-          </div>
-        </section>
+      <main className="workspace-main" ref={workspace}>
+        <details className="intro-disclosure">
+          <summary>About the optical explorer</summary>
+          <section className="intro">
+            <div>
+              <p className="eyebrow">
+                <span className="blue-dash" /> AN INTERACTIVE OPTICS LAB
+              </p>
+              <h1>
+                A little change.
+                <br className="mobile-break" /> A different field of view.
+              </h1>
+              <p>
+                Explore how your sensor and lens shape what you see. Change a
+                setting. Watch the geometry respond.
+              </p>
+            </div>
+            <div className="intro-detail">
+              <span>01 — CONFIGURE</span>
+              <span>02 — EXPLORE</span>
+              <span>03 — COMPARE</span>
+            </div>
+          </section>
+        </details>
         {compare && (
           <div className="compare-toolbar">
             <div
@@ -371,51 +382,78 @@ export default function App() {
                       : "See the relationship."}
                   </h2>
                 </div>
-                <span className="live-label">
-                  <span /> Live
-                </span>
-              </div>
-              {!compare && (
-                <div className="experiment-bar">
-                  <span>Try an experiment</span>
+                <div className="workbench-actions">
+                  <span className="live-label">
+                    <span /> Live
+                  </span>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setA({ ...DEFAULT, focal: 16, aperture: 4 });
-                      setMode("preview");
-                      toast("Wide-angle lens: see more of the same scene.");
+                    className="fullscreen-button"
+                    onClick={async () => {
+                      try {
+                        if (document.fullscreenElement)
+                          await document.exitFullscreen();
+                        else await workspace.current?.requestFullscreen();
+                      } catch {
+                        toast("Full screen is unavailable in this browser.");
+                      }
                     }}
                   >
-                    Wider view
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setA({ ...DEFAULT, circle: 29 });
-                      setMode("coverage");
-                      toast(
-                        "Smaller image circle: inspect the uncovered sensor corners.",
-                      );
-                    }}
-                  >
-                    Sensor vs lens
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setA({ ...DEFAULT, focal: 85, aperture: 1.4, focusM: 3 });
-                      setMode("dof");
-                      toast(
-                        "Portrait example: see the smaller acceptable-sharpness region.",
-                      );
-                    }}
-                  >
-                    Shallow focus
+                    <Maximize size={15} />{" "}
+                    {fullscreen ? "Exit full screen" : "Full screen"}
                   </Button>
                 </div>
+              </div>
+              {!compare && (
+                <details className="experiment-disclosure">
+                  <summary>Examples</summary>
+                  <div className="experiment-bar">
+                    <span>Try an experiment</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setA({ ...DEFAULT, focal: 16, aperture: 4 });
+                        setMode("preview");
+                        toast("Wide-angle lens: see more of the same scene.");
+                      }}
+                    >
+                      Wider view
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setA({ ...DEFAULT, circle: 29 });
+                        setMode("coverage");
+                        toast(
+                          "Smaller image circle: inspect the uncovered sensor corners.",
+                        );
+                      }}
+                    >
+                      Sensor vs lens
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setA({
+                          ...DEFAULT,
+                          focal: 85,
+                          aperture: 1.4,
+                          focusM: 3,
+                        });
+                        setMode("dof");
+                        toast(
+                          "Portrait example: see the smaller acceptable-sharpness region.",
+                        );
+                      }}
+                    >
+                      Shallow focus
+                    </Button>
+                  </div>
+                </details>
               )}
               <div
                 className="mode-tabs"
@@ -586,25 +624,32 @@ export default function App() {
                 </span>
               </div>
               <div className="learning">
-                <h3>{info.title}</h3>
-                <p>{info.description}</p>
-                <details>
-                  <summary>
-                    How it works <span>Equations & assumptions</span>
-                  </summary>
-                  <p className="equation">{info.equation}</p>
-                  <p>
-                    Real lenses may have distortion, focus breathing,
-                    transmission losses and nonuniform illumination. Nominal FOV
-                    and geometric coverage do not measure actual image quality.
-                    Pixel sampling is not a guarantee of resolved detail.
-                  </p>
+                <details className="view-explanation">
+                  <summary>About this view</summary>
+                  <h3>{info.title}</h3>
+                  <p>{info.description}</p>
+                  <details>
+                    <summary>
+                      How it works <span>Equations & assumptions</span>
+                    </summary>
+                    <p className="equation">{info.equation}</p>
+                    <p>
+                      Real lenses may have distortion, focus breathing,
+                      transmission losses and nonuniform illumination. Nominal
+                      FOV and geometric coverage do not measure actual image
+                      quality. Pixel sampling is not a guarantee of resolved
+                      detail.
+                    </p>
+                  </details>
                 </details>
               </div>
             </Card>
             {compare && (
               <Card className="comparison-card">
-                <ComparisonTable a={a} b={b} />
+                <details className="comparison-details">
+                  <summary>Compare all results</summary>
+                  <ComparisonTable a={a} b={b} />
+                </details>
               </Card>
             )}
             <Card className="export-card">
@@ -691,7 +736,7 @@ export default function App() {
         </span>
         <span>Local calculations. No account. Just optics.</span>
         <a
-          href="https://github.com/maninka123/Interactive-Camera-FOV-Simulator#readme"
+          href="https://maninka123.github.io/Interactive-Camera-FOV-Simulator/#guide"
           target="_blank"
           rel="noreferrer"
         >

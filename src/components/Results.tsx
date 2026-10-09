@@ -48,30 +48,30 @@ export function ResultsPanel({
           )}
           <div>
             <strong>{r.coverageStatus}</strong>
-            <span>
-              {display(r.coverage * 100, 1)}% of sensor area illuminated
-              geometrically
-            </span>
+            <span>{display(r.coverage * 100, 1)}% illuminated sensor area</span>
           </div>
         </div>
-        <dl className="spec-list">
-          <div>
-            <dt>Sensor diagonal</dt>
-            <dd>{display(r.sensorDiagonal)} mm</dd>
-          </div>
-          <div>
-            <dt>Image circle</dt>
-            <dd>{display(c.circle)} mm</dd>
-          </div>
-          <div>
-            <dt>Entrance pupil Ø</dt>
-            <dd>{display(r.apertureDiameter)} mm</dd>
-          </div>
-          <div>
-            <dt>Light vs f/1</dt>
-            <dd>{display(r.relativeLight * 100, 2)}%</dd>
-          </div>
-        </dl>
+        <details className="result-details">
+          <summary>Lens & sensor metrics</summary>
+          <dl className="spec-list">
+            <div>
+              <dt>Sensor diagonal</dt>
+              <dd>{display(r.sensorDiagonal)} mm</dd>
+            </div>
+            <div>
+              <dt>Image circle</dt>
+              <dd>{display(c.circle)} mm</dd>
+            </div>
+            <div>
+              <dt>Entrance pupil Ø</dt>
+              <dd>{display(r.apertureDiameter)} mm</dd>
+            </div>
+            <div>
+              <dt>Light vs f/1</dt>
+              <dd>{display(r.relativeLight * 100, 2)}%</dd>
+            </div>
+          </dl>
+        </details>
       </Card>
       <Card className="result-card">
         <div className="card-heading">
@@ -99,19 +99,24 @@ export function ResultsPanel({
             <dt>{display(c.objectM)} m object</dt>
             <dd>{display(r.objectPixels, 1)} px</dd>
           </div>
-          <div>
-            <dt>Mean angular X</dt>
-            <dd>{display(r.meanAngularX * 1000, 3)} mdeg/px</dd>
-          </div>
-          <div>
-            <dt>Mean angular Y</dt>
-            <dd>{display(r.meanAngularY * 1000, 3)} mdeg/px</dd>
-          </div>
-          <div>
-            <dt>Centre angular X</dt>
-            <dd>{display(r.centralAngularX * 1000, 3)} mdeg/px</dd>
-          </div>
         </dl>
+        <details className="result-details">
+          <summary>Angular sampling</summary>
+          <dl className="spec-list">
+            <div>
+              <dt>Mean angular X</dt>
+              <dd>{display(r.meanAngularX * 1000, 3)} mdeg/px</dd>
+            </div>
+            <div>
+              <dt>Mean angular Y</dt>
+              <dd>{display(r.meanAngularY * 1000, 3)} mdeg/px</dd>
+            </div>
+            <div>
+              <dt>Centre angular X</dt>
+              <dd>{display(r.centralAngularX * 1000, 3)} mdeg/px</dd>
+            </div>
+          </dl>
+        </details>
         {c.objectM > r.sceneWidthM && (
           <p className="small-warning">
             Object exceeds the frame width; the pixel estimate is its unclipped
@@ -120,22 +125,24 @@ export function ResultsPanel({
         )}
       </Card>
       <Card className="model-note">
-        <span className="eyebrow">MODEL NOTES</span>
-        <p>
-          Nominal FOV assumes infinity focus. Aperture changes light and depth
-          of field, while geometric FOV stays the same.
-        </p>
-        <p>
-          Image circle coverage alone does not establish real vignetting,
-          distortion or sharpness.
-        </p>
-        {r.finiteImageDistance / c.focal > 1.05 && (
-          <p className="small-warning">
-            Close focus: the thin-lens image distance is{" "}
-            {display(r.finiteImageDistance)} mm. Finite-focus framing may differ
-            substantially.
+        <details>
+          <summary>Model notes</summary>
+          <p>
+            Nominal FOV assumes infinity focus. Aperture changes light and depth
+            of field, while geometric FOV stays the same.
           </p>
-        )}
+          <p>
+            Image circle coverage alone does not establish real vignetting,
+            distortion or sharpness.
+          </p>
+          {r.finiteImageDistance / c.focal > 1.05 && (
+            <p className="small-warning">
+              Close focus: the thin-lens image distance is{" "}
+              {display(r.finiteImageDistance)} mm. Finite-focus framing may
+              differ substantially.
+            </p>
+          )}
+        </details>
       </Card>
     </aside>
   );
